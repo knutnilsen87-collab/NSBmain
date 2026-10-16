@@ -1,5 +1,4 @@
-#Requires -Version 7
-<#
+﻿<#
 .SYNOPSIS
   Lager nytt RSA-nøkkelpar for signering av loggfiler (FBL) og trekker det gamle tilbake.
 
@@ -25,8 +24,7 @@ $pubPath = Join-Path $pubDir 'public_key.xml'
 $revokedPath = Join-Path $pubDir 'REVOKED.json'
 
 function Get-Fingerprint([string]$Path) {
-    $bytes = [System.IO.File]::ReadAllBytes($Path)
-    return [System.Convert]::ToHexString([System.Security.Cryptography.SHA256]::HashData($bytes)).ToLowerInvariant()
+    return (Get-FileHash -Algorithm SHA256 -Path $Path).Hash.ToLowerInvariant()
 }
 
 $revoked = @()

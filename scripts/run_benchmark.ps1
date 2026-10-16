@@ -1,5 +1,4 @@
-#Requires -Version 7
-<#
+﻿<#
 .SYNOPSIS
   Kjører NSB-målestokken: alle modeller mot alle faste testsett.
 
@@ -33,6 +32,8 @@ param(
 )
 
 $ErrorActionPreference = 'Continue'
+# Windows PowerShell 5.1 skriver ellers omdirigering (*>>) som UTF-16.
+$PSDefaultParameterValues['Out-File:Encoding'] = 'utf8'
 Set-Location $Root
 $Results = Join-Path $Root 'eval/results'
 New-Item -ItemType Directory -Force -Path $Results | Out-Null
