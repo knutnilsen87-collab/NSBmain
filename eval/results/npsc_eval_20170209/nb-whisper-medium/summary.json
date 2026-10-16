@@ -1,0 +1,108 @@
+{
+  "schema": "nsb-eval-2",
+  "testset": "npsc_eval_20170209",
+  "manifest": "eval/testsets/npsc_eval_20170209.jsonl",
+  "manifest_sha256": "62e68e6abd97d692625c74983c2573390736c93832e3d33f4d5470bdaa5411a0",
+  "model": {
+    "backend": "faster-whisper",
+    "model": "nb-whisper-medium",
+    "model_ref": "F:\\prosjekter_MAIN\\NorwegianSpeechBase\\models\\benchmark\\nb-whisper-medium\\ct2",
+    "device": "cuda",
+    "compute_type": "float16",
+    "language": "no",
+    "task": "transcribe",
+    "beam_size": 5,
+    "temperature": 0.0,
+    "condition_on_previous_text": false,
+    "vad_filter": false,
+    "faster_whisper_version": "1.2.1",
+    "ctranslate2_version": "4.8.3",
+    "cuda_devices": 1,
+    "model_revision": "0ed074d5985bd56ca4140159a9dbffbc3fb5117e",
+    "model_sha256": "1721dd1dc26d7a543280aaedbc8ab2832578cef4bf834d4fdd838393f36d278a"
+  },
+  "started_utc": "2026-10-16T10:44:02.325913+00:00",
+  "finished_utc": "2026-10-16T10:49:51.980048+00:00",
+  "git_sha": "5fb95d573dbabd02d3e92f1e1bcd12768db91358",
+  "python": "3.11.9",
+  "platform": "Windows-10-10.0.26200-SP0",
+  "normalizer": "nsb_eval.normalize v3 (tall som sifre, gammel tellemåte etter hundre/tusen)",
+  "rescored_utc": "2026-10-16T12:21:50.472761+00:00",
+  "items_total": 582,
+  "items_failed": 0,
+  "complete": true,
+  "items_nonlexical_excluded": 0,
+  "speech": {
+    "items": 582,
+    "wer": 0.285385,
+    "cer": 0.195254,
+    "word_counts": {
+      "substitutions": 1335,
+      "deletions": 952,
+      "insertions": 935,
+      "reference_length": 11290,
+      "errors": 3222
+    },
+    "substitution_rate": 0.118246,
+    "deletion_rate": 0.084322,
+    "insertion_rate": 0.082817,
+    "hallucination_items": 4,
+    "hallucination_rate": 0.006873,
+    "repetition_loop_items": 3,
+    "overlong_items": 4,
+    "empty_output_items": 0,
+    "audio_seconds": 4892.96,
+    "processing_seconds": 345.45,
+    "real_time_factor": 0.0706
+  },
+  "by_dialect": {
+    "ukjent": {
+      "items": 582,
+      "wer": 0.285385,
+      "cer": 0.195254,
+      "word_counts": {
+        "substitutions": 1335,
+        "deletions": 952,
+        "insertions": 935,
+        "reference_length": 11290,
+        "errors": 3222
+      },
+      "substitution_rate": 0.118246,
+      "deletion_rate": 0.084322,
+      "insertion_rate": 0.082817,
+      "hallucination_items": 4,
+      "hallucination_rate": 0.006873,
+      "repetition_loop_items": 3,
+      "overlong_items": 4,
+      "empty_output_items": 0,
+      "audio_seconds": 4892.96,
+      "processing_seconds": 345.45,
+      "real_time_factor": 0.0706
+    }
+  },
+  "by_standard": {
+    "ukjent": {
+      "items": 582,
+      "wer": 0.285385,
+      "cer": 0.195254,
+      "word_counts": {
+        "substitutions": 1335,
+        "deletions": 952,
+        "insertions": 935,
+        "reference_length": 11290,
+        "errors": 3222
+      },
+      "substitution_rate": 0.118246,
+      "deletion_rate": 0.084322,
+      "insertion_rate": 0.082817,
+      "hallucination_items": 4,
+      "hallucination_rate": 0.006873,
+      "repetition_loop_items": 3,
+      "overlong_items": 4,
+      "empty_output_items": 0,
+      "audio_seconds": 4892.96,
+      "processing_seconds": 345.45,
+      "real_time_factor": 0.0706
+    }
+  }
+}

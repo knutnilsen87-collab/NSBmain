@@ -1,0 +1,42 @@
+{
+  "nb-whisper-large": {
+    "name": "nb-whisper-large",
+    "repo": "NbAiLab/nb-whisper-large",
+    "path": "models/benchmark/nb-whisper-large/ct2",
+    "converted": false,
+    "revision": "8c6249fdeeb4dcd05e5735a4c39640607eb6e4ac",
+    "model_sha256": "91a2575f6e703d0bf6d8ce228a490c40e2404e6275932c20ff137382f35f726d"
+  },
+  "nb-whisper-large-distil-turbo-beta": {
+    "name": "nb-whisper-large-distil-turbo-beta",
+    "repo": "NbAiLab/nb-whisper-large-distil-turbo-beta",
+    "path": "models/benchmark/nb-whisper-large-distil-turbo-beta/ct2_converted",
+    "converted": true,
+    "revision": "5f3a904a7ff82fbf3de5c48d59edf9c59b820773",
+    "model_sha256": "3f809c867915f7bb302ab9f6a78532d9c7f055ea7a684664035d87e10b18751a"
+  },
+  "nb-whisper-medium": {
+    "name": "nb-whisper-medium",
+    "repo": "NbAiLab/nb-whisper-medium",
+    "path": "models/benchmark/nb-whisper-medium/ct2",
+    "converted": false,
+    "revision": "0ed074d5985bd56ca4140159a9dbffbc3fb5117e",
+    "model_sha256": "1721dd1dc26d7a543280aaedbc8ab2832578cef4bf834d4fdd838393f36d278a"
+  },
+  "nb-whisper-small": {
+    "name": "nb-whisper-small",
+    "repo": "NbAiLab/nb-whisper-small",
+    "path": "models/benchmark/nb-whisper-small/ct2",
+    "converted": false,
+    "revision": "e9bb5cb83cb74c96239fd506163aa97cff2fce4c",
+    "model_sha256": "c16263d0dbbbd8a486899ab2375fbe67f29f0356d40180ac8ce2443c19a908f0"
+  },
+  "whisper-large-v3": {
+    "name": "whisper-large-v3",
+    "repo": "Systran/faster-whisper-large-v3",
+    "path": "models/benchmark/whisper-large-v3",
+    "converted": false,
+    "revision": "edaa852ec7e145841d8ffdb056a99866b5f0a478",
+    "model_sha256": "69f74147e3334731bc3a76048724833325d2ec74642fb52620eda87352e3d4f1"
+  }
+}

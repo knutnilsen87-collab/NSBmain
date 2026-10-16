@@ -2,13 +2,13 @@
 
 Norsk talegjenkjenning med etterprøvbar kvalitet: en fast, åpen målestokk for norske talemodeller, et pilot-API for transkribering og verktøy for å trene og tilpasse NB-Whisper.
 
-Status oktober 2026: fase 0 (opprydding) og fase 1 (målestokk) i [planen](https://claude.ai/code/artifact/0b3c098e-dbbd-4ebb-84b7-dad0a2f19f11). Første offentlige resultater ligger i [`eval/results/BENCHMARK.md`](eval/results/BENCHMARK.md) når målingen er kjørt.
+Status oktober 2026: fase 0 (opprydding) og fase 1 (målestokk) i [planen](https://claude.ai/code/artifact/0b3c098e-dbbd-4ebb-84b7-dad0a2f19f11). Første måling er kjørt 2026-10-16: fem modeller på fire faste testsett. Se [analysen](eval/results/ANALYSIS.md) og [tabellene](eval/results/BENCHMARK.md). NB-Whisper large distil-turbo er standardmodell for diktering; ordrett transkribering og nynorsk er de største svakhetene.
 
 ## Innhold
 
 | Mappe | Hva |
 | --- | --- |
-| `nsb_eval/` | Målestokken: norsk normalisering, WER/CER, hallusinasjonsmål, kjører, forhåndssjekk, omscoring og rapport |
+| `nsb_eval/` | Målestokken: norsk normalisering, WER/CER, hallusinasjonsmål, kjører, forhåndssjekk, omscoring, rapport og parvis sammenligning (`compare`) |
 | `eval/testsets/` | Faste testsett (NPSC, NB Samtale), låst med sjekksum |
 | `eval/recording/` | Innspillingssett for juridisk diktering |
 | `apps/pilot-asr-api/` | FastAPI-tjeneste for transkribering (mock eller faster-whisper), med Dockerfile |
