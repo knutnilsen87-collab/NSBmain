@@ -11,6 +11,7 @@ sti per modell, som ``run_benchmark.ps1`` leser.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import shutil
 import subprocess
@@ -30,25 +31,56 @@ def _has_ct2(path: Path) -> bool:
     return (path / "model.bin").exists() and (path / "config.json").exists()
 
 
+def sha256_file(path: Path) -> str:
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(1 << 22), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def _local_revision(target: Path) -> str | None:
+    """Commit-hash fra huggingface_hubs lokale metadata (local_dir-nedlasting)."""
+    meta_root = target / ".cache" / "huggingface" / "download"
+    for meta in sorted(meta_root.glob("**/*.metadata")) if meta_root.exists() else []:
+        first = meta.read_text(encoding="utf-8", errors="ignore").splitlines()[:1]
+        if first and len(first[0].strip()) == 40:
+            return first[0].strip()
+    return None
+
+
+def record(entry: dict, target: Path) -> dict:
+    """Legger til revisjon og sha256 av model.bin, slik at resultater kan
+    knyttes til en eksakt modellversjon."""
+    model_bin = Path(entry["path"]) / "model.bin"
+    if model_bin.exists():
+        entry["model_sha256"] = sha256_file(model_bin)
+    entry.setdefault("revision", _local_revision(target))
+    return entry
+
+
 def fetch(name: str, spec: dict, out: Path) -> dict:
-    from huggingface_hub import snapshot_download
+    from huggingface_hub import HfApi, snapshot_download
 
     target = out / name
     sub = spec["subdir"]
     patterns = [f"{sub}/*"] if sub else None
-    local = Path(snapshot_download(spec["repo"], local_dir=str(target), allow_patterns=patterns))
+    revision = HfApi().model_info(spec["repo"]).sha  # lås til eksakt commit
+    local = Path(snapshot_download(spec["repo"], revision=revision, local_dir=str(target), allow_patterns=patterns))
     model_dir = local / sub if sub else local
     if _has_ct2(model_dir):
         # Tokenizer-filene ligger ofte i roten; faster-whisper trenger tokenizer.json ved siden av model.bin.
         if not (model_dir / "tokenizer.json").exists():
-            snapshot_download(spec["repo"], local_dir=str(target), allow_patterns=["tokenizer.json", "preprocessor_config.json"])
+            snapshot_download(spec["repo"], revision=revision, local_dir=str(target),
+                              allow_patterns=["tokenizer.json", "preprocessor_config.json"])
             for f in ("tokenizer.json", "preprocessor_config.json"):
                 if (target / f).exists() and not (model_dir / f).exists():
                     shutil.copy(target / f, model_dir / f)
-        return {"name": name, "repo": spec["repo"], "path": str(model_dir.resolve()), "converted": False}
+        return record({"name": name, "repo": spec["repo"], "revision": revision,
+                       "path": str(model_dir.resolve()), "converted": False}, target)
 
     # Ingen ferdig CT2: last ned Transformers-vektene og konverter.
-    hf_dir = Path(snapshot_download(spec["repo"], local_dir=str(target / "hf"),
+    hf_dir = Path(snapshot_download(spec["repo"], revision=revision, local_dir=str(target / "hf"),
                                     allow_patterns=["*.json", "*.safetensors", "*.txt", "*.model"]))
     ct2_dir = target / "ct2_converted"
     if not _has_ct2(ct2_dir):
@@ -57,18 +89,28 @@ def fetch(name: str, spec: dict, out: Path) -> dict:
              "--copy_files", "tokenizer.json", "preprocessor_config.json", "--quantization", "float16", "--force"],
             check=True,
         )
-    return {"name": name, "repo": spec["repo"], "path": str(ct2_dir.resolve()), "converted": True}
+    return record({"name": name, "repo": spec["repo"], "revision": revision,
+                   "path": str(ct2_dir.resolve()), "converted": True}, target)
 
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--out", default="models/benchmark")
     ap.add_argument("--only", action="append", help="Bare disse modellene (kan gjentas)")
+    ap.add_argument("--record-only", action="store_true",
+                    help="Ikke last ned; legg revisjon og sha256 til modeller som allerede er lastet ned")
     args = ap.parse_args(argv)
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
     registry_path = out / "models.json"
     registry = json.loads(registry_path.read_text(encoding="utf-8")) if registry_path.exists() else {}
+    if args.record_only:
+        for name, entry in registry.items():
+            if entry.get("path"):
+                registry[name] = record(entry, out / name)
+                print(f"[ok] {name}: revisjon {registry[name].get('revision')}, sha256 {registry[name].get('model_sha256', '')[:12]}")
+        registry_path.write_text(json.dumps(registry, ensure_ascii=False, indent=2), encoding="utf-8")
+        return 0
     failed = []
     for name, spec in MODELS.items():
         if args.only and name not in args.only:

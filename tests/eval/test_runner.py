@@ -128,3 +128,64 @@ def test_cli_exit_codes(speech_set, tmp_path):
     assert code == 2  # én fil mangler
     with pytest.raises(SystemExit):
         main(["--manifest", str(manifest), "--out-dir", str(tmp_path / "x")])  # mangler --model
+
+
+def test_resume_refuses_other_model(speech_set, tmp_path):
+    root, manifest, answers = speech_set
+    out = tmp_path / "same"
+    base = {"manifest": str(manifest), "out_dir": str(out), "backend_kind": "mock", "audio_root": str(root), "log": lambda *_: None}
+    evaluate(**base, backend_kwargs={"answers_file": str(answers), "label": "modell-a"})
+    with pytest.raises(SystemExit, match="annen kjøring"):
+        evaluate(**base, backend_kwargs={"answers_file": str(answers), "label": "modell-b"})
+    s = evaluate(**base, backend_kwargs={"answers_file": str(answers), "label": "modell-b"}, resume=False)
+    assert s["model"]["model"] == "modell-b"
+
+
+def test_rescore_recomputes_from_raw_text(speech_set, tmp_path):
+    from nsb_eval import rescore
+
+    root, manifest, answers = speech_set
+    out = tmp_path / "res" / "set" / "mock"
+    evaluate(manifest=str(manifest), out_dir=str(out), backend_kind="mock",
+             backend_kwargs={"answers_file": str(answers)}, audio_root=str(root), group_by=["dialect"], log=lambda *_: None)
+    items = out / "items.jsonl"
+    rows = [json.loads(line) for line in items.read_text(encoding="utf-8").splitlines()]
+    for r in rows:  # simuler gammel normalisering: feil lagrede normaliserte felt
+        if "reference_norm" in r:
+            r["reference_norm"] = "noe helt annet"
+            r["words"] = {"substitutions": 99, "deletions": 0, "insertions": 0, "reference_length": 3}
+    items.write_text("".join(json.dumps(r, ensure_ascii=False) + "\n" for r in rows), encoding="utf-8")
+    assert rescore.main(["--results", str(tmp_path / "res")]) == 0
+    s = json.loads((out / "summary.json").read_text(encoding="utf-8"))
+    assert s["speech"]["wer"] == pytest.approx(2 / 11, abs=1e-6)
+    assert "rescored_utc" in s and "by_dialect" in s
+    assert "v2" in s["normalizer"]
+
+
+def test_groups_without_metadata_are_named_ukjent(tmp_path):
+    from nsb_eval.runner import score_item, summarize
+
+    rows = [score_item("a", "hei der", "hei der", {}), score_item("b", "hei", "hei", {"dialect": None})]
+    s = summarize(rows, group_by=["dialect"])
+    assert list(s["by_dialect"]) == ["ukjent"]
+
+
+def test_language_from_meta_passes_per_item_language(speech_set, tmp_path, monkeypatch):
+    from nsb_eval import backends
+
+    seen = []
+    orig = backends.MockBackend.transcribe
+
+    def spy(self, audio_path, language=None):
+        seen.append(language)
+        return orig(self, audio_path, language)
+
+    monkeypatch.setattr(backends.MockBackend, "transcribe", spy)
+    root, manifest, answers = speech_set
+    rows = [json.loads(line) for line in manifest.read_text(encoding="utf-8").splitlines()]
+    rows[0]["standard"], rows[1]["standard"] = "nn", "bm"
+    manifest.write_text("".join(json.dumps(r, ensure_ascii=False) + "\n" for r in rows), encoding="utf-8")
+    s = evaluate(manifest=str(manifest), out_dir=str(tmp_path / "lang"), backend_kind="mock",
+                 backend_kwargs={"answers_file": str(answers)}, audio_root=str(root),
+                 language_from_meta="standard", log=lambda *_: None)
+    assert seen[:2] == ["nn", "no"] and s["language_from_meta"] == "standard"

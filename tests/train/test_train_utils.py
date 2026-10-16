@@ -110,3 +110,18 @@ def test_fixed_testsets_are_never_in_training_manifests_by_tail():
         for line in m.read_text(encoding="utf-8").splitlines():
             tails.add("/".join(json.loads(line)["audio"].lower().split("/")[-3:]))
     assert len(tails) == 501 + 582 + 1195
+
+
+def test_split_excludes_by_text_and_path_substring():
+    rows = _rows() + [
+        {"audio": "F:/annet/sted/kopi_av_testlyd.wav", "text": "Stortingets møte er lovlig satt i dag"},
+        {"audio": "F:/npsc/20170207/audio/x.wav", "text": "en helt annen setning her nå"},
+    ]
+    parts, summary = split(
+        rows, 5.0, 5.0, group_regex=r"(no\d+x\d+)", text_leakage="ignore",
+        exclude_texts={"stortingets møte er lovlig satt i dag"}, exclude_path_contains=["20170207"],
+    )
+    assert summary["excluded_fixed_testset_text"] == 1
+    assert summary["excluded_path_match"] == 1
+    kept = {r["audio"] for p in parts.values() for r in p}
+    assert "F:/annet/sted/kopi_av_testlyd.wav" not in kept and "F:/npsc/20170207/audio/x.wav" not in kept

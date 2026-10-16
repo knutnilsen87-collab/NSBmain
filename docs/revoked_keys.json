@@ -1,0 +1,9 @@
+[
+  {
+    "modulus_sha256": "09f3fb20bf5460e51c1a0efc65663256883fe98baea4318f0a7c32bc2b680149",
+    "bits": 2048,
+    "format": ".NET RSAKeyValue XML (security/keys/private_key.xml)",
+    "revoked": "2026-10-16",
+    "reason": "Privat nøkkel lå i offentlig git-historikk (knutnilsen87-collab/NSBmain) fra desember 2025 til 2026-10-16."
+  }
+]

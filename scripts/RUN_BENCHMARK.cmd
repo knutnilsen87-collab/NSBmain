@@ -8,9 +8,11 @@ where pwsh >NUL 2>NUL && set "NSB_PS=pwsh"
 if not defined NSB_PS if exist "%ProgramFiles%\PowerShell\7\pwsh.exe" set "NSB_PS=%ProgramFiles%\PowerShell\7\pwsh.exe"
 if not defined NSB_PS set "NSB_PS=powershell"
 echo Bruker %NSB_PS% i %CD%
-if not exist security\pubkeys\REVOKED.json "%NSB_PS%" -NoProfile -ExecutionPolicy Bypass -File scripts\rotate_signing_key.ps1
+"%NSB_PS%" -NoProfile -ExecutionPolicy Bypass -File scripts\rotate_signing_key.ps1
 "%NSB_PS%" -NoProfile -ExecutionPolicy Bypass -File scripts\run_benchmark.ps1 %*
+set "NSB_RC=%ERRORLEVEL%"
 echo.
-echo Ferdig. Se eval\results\BENCHMARK.md
+if "%NSB_RC%"=="0" (echo Ferdig. Se eval\results\BENCHMARK.md) else (echo Feilet med kode %NSB_RC%. Se eval\results\RUN.log og RUN_STATUS.json)
 popd
 pause
+exit /b %NSB_RC%

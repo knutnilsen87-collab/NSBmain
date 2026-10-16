@@ -8,7 +8,7 @@ Status oktober 2026: fase 0 (opprydding) og fase 1 (målestokk) i [planen](https
 
 | Mappe | Hva |
 | --- | --- |
-| `nsb_eval/` | Målestokken: norsk normalisering, WER/CER, hallusinasjonsmål, kjører og rapport |
+| `nsb_eval/` | Målestokken: norsk normalisering, WER/CER, hallusinasjonsmål, kjører, forhåndssjekk, omscoring og rapport |
 | `eval/testsets/` | Faste testsett (NPSC, NB Samtale), låst med sjekksum |
 | `eval/recording/` | Innspillingssett for juridisk diktering |
 | `apps/pilot-asr-api/` | FastAPI-tjeneste for transkribering (mock eller faster-whisper), med Dockerfile |
@@ -24,7 +24,7 @@ Plattform-stillaset (runtime, packages, TTS-skjelett, frontend) ligger i grenen 
 py -3.11 -m venv .venv
 .venv\Scripts\Activate.ps1
 pip install -e ".[dev]"
-pytest                         # 100 tester, ingen modell nødvendig
+pytest                         # over 100 tester, ingen modell nødvendig
 ```
 
 Kjør målestokken på GPU (laster ned NB-Whisper og Whisper large-v3):

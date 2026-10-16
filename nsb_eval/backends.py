@@ -26,7 +26,7 @@ class Backend:
     def describe(self) -> dict:
         return {"backend": self.name}
 
-    def transcribe(self, audio_path: str) -> dict:  # pragma: no cover - grensesnitt
+    def transcribe(self, audio_path: str, language: str | None = None) -> dict:  # pragma: no cover - grensesnitt
         raise NotImplementedError
 
 
@@ -49,6 +49,8 @@ class FasterWhisperBackend(Backend):
         beam_size: int = 5,
         vad_filter: bool = False,
         label: str | None = None,
+        model_revision: str | None = None,
+        model_sha256: str | None = None,
     ):
         from faster_whisper import WhisperModel  # importeres først her
 
@@ -59,6 +61,8 @@ class FasterWhisperBackend(Backend):
         self.language = language
         self.beam_size = beam_size
         self.vad_filter = vad_filter
+        self.model_revision = model_revision
+        self.model_sha256 = model_sha256
         self._model = WhisperModel(model, device=device, compute_type=compute_type)
 
     def describe(self) -> dict:
@@ -69,6 +73,8 @@ class FasterWhisperBackend(Backend):
             "backend": self.name,
             "model": self.label,
             "model_ref": self.model_ref,
+            "model_revision": self.model_revision,
+            "model_sha256": self.model_sha256,
             "device": self.device,
             "compute_type": self.compute_type,
             "language": self.language,
@@ -82,10 +88,10 @@ class FasterWhisperBackend(Backend):
             "cuda_devices": ctranslate2.get_cuda_device_count(),
         }
 
-    def transcribe(self, audio_path: str) -> dict:
+    def transcribe(self, audio_path: str, language: str | None = None) -> dict:
         segments, info = self._model.transcribe(
             audio_path,
-            language=self.language,
+            language=language or self.language,
             task="transcribe",
             beam_size=self.beam_size,
             temperature=0.0,
@@ -117,7 +123,7 @@ class MockBackend(Backend):
     def describe(self) -> dict:
         return {"backend": self.name, "model": self.label}
 
-    def transcribe(self, audio_path: str) -> dict:
+    def transcribe(self, audio_path: str, language: str | None = None) -> dict:  # noqa: ARG002
         if not Path(audio_path).exists():
             raise FileNotFoundError(audio_path)
         key = Path(audio_path).name

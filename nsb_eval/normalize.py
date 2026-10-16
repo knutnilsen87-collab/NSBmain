@@ -11,8 +11,9 @@ er den samme for fasit og modellsvar, og den er bevisst konservativ:
   (``%eee``, ``%unint`` ...) og klammeparenteser
 - fyllord (``eh``, ``ehm``, ``mm`` ...) fjernes, fordi NPSC og NB Samtale
   markerer dem som annotasjoner og modeller skriver dem ulikt
-- tall skrevet med sifre gjøres om til ord (bokmål, moderne tellemåte), slik
-  at «21» og «tjueen» regnes som like
+- tall gjøres entydige som sifre på begge sider: tallord, også sammensatte
+  («totusenogseksten»), gammel tellemåte («femogtjue»), årstall
+  («nittenåttiåtte») og klokkeslett («tjueen null null» = «21.00»)
 - tegnsetting fjernes, bindestrek blir mellomrom
 - aksenter fjernes, unntatt æ, ø og å
 
@@ -107,7 +108,10 @@ def number_to_words(n: int) -> str:
         if not rest:
             return head
         joiner = " og " if rest < 100 else " "
-        return head + joiner + _below_thousand(rest)
+        tail = _below_thousand(rest)
+        if 100 <= rest < 200:
+            tail = "ett " + tail  # to tusen ett hundre
+        return head + joiner + tail
     if n < 1_000_000_000:
         millions, rest = divmod(n, 1_000_000)
         head = "en million" if millions == 1 else f"{_below_thousand(millions)} millioner"
@@ -132,37 +136,182 @@ def ordinal_to_words(n: int) -> str:
     return number_to_words(n) + "ende"
 
 
-# «13.» rett før et ord (ordenstall) eller et heltall. Desimaltall og
-# tusenskilletegn håndteres før dette.
+# «13.» rett før et ord (ordenstall). Desimaltall og tusenskilletegn
+# håndteres før dette.
 _ORDINAL_RE = re.compile(r"\b(\d{1,3})\.(?=\s+[a-zæøå])")
 _DECIMAL_RE = re.compile(r"\b(\d+),(\d+)\b")
-# Klokkeslett «21.00» / «21:30» (timer 0–23, to sifre for minutter).
-_CLOCK_RE = re.compile(r"\b([01]?\d|2[0-3])[.:]([0-5]\d)\b")
+# Klokkeslett «21.00» / «21:30» (timer 0–23, to sifre for minutter), men ikke
+# datoer som «17.05.2018».
+_CLOCK_RE = re.compile(r"(?<![\d.])\b([01]?\d|2[0-3])[.:]([0-5]\d)\b(?![.:]\d)")
 _THOUSANDS_RE = re.compile(r"\b(\d{1,3})(?:[ . ](\d{3}))+\b")
 _PERCENT_RE = re.compile(r"(\d)\s*%")
 _PARAGRAPH_RE = re.compile(r"§+")
-_INT_RE = re.compile(r"\d+")
+_LEADING_ZERO_RE = re.compile(r"\b0\d+\b")
 _PUNCT_RE = re.compile(r"[^\w\s]", flags=re.UNICODE)
 _SPACE_RE = re.compile(r"\s+")
 
 
-def _clock(m: re.Match) -> str:
-    hour, minute = int(m.group(1)), m.group(2)
-    tail = "null null" if minute == "00" else number_to_words(int(minute))
-    return f" {number_to_words(hour)} {tail} "
+def _digits(group: str) -> str:
+    """«00» -> «0 0», «05» -> «0 5»: slik sies tall med nuller foran."""
+    return " ".join(group)
 
 
-def _expand_numbers(text: str) -> str:
-    text = _CLOCK_RE.sub(_clock, text)
+def _expand_digits(text: str) -> str:
+    """Gjør skrevne tall entydige. Tall beholdes som sifre; tallord gjøres om
+    til sifre etterpå (``_words_to_digits``), slik at «2016» og
+    «totusenogseksten» blir like."""
+    text = _CLOCK_RE.sub(lambda m: f" {int(m.group(1))} {m.group(2) if m.group(2) != '00' else '0 0'} ", text)
     text = _PERCENT_RE.sub(r"\1 prosent", text)
     text = _PARAGRAPH_RE.sub(" paragraf ", text)
-    text = _THOUSANDS_RE.sub(lambda m: m.group(0).replace(" ", "").replace(".", "").replace(" ", ""), text)
-    text = _DECIMAL_RE.sub(
-        lambda m: f"{number_to_words(int(m.group(1)))} komma {' '.join(_ONES[int(d)] for d in m.group(2))}",
-        text,
-    )
-    text = _ORDINAL_RE.sub(lambda m: ordinal_to_words(int(m.group(1))), text)
-    return _INT_RE.sub(lambda m: f" {number_to_words(int(m.group(0)))} ", text)
+    text = _THOUSANDS_RE.sub(lambda m: re.sub(r"[ . ]", "", m.group(0)), text)
+    text = _DECIMAL_RE.sub(lambda m: f" {int(m.group(1))} komma {_digits(m.group(2))} ", text)
+    return _LEADING_ZERO_RE.sub(lambda m: _digits(m.group(0)), text)
+
+
+# Tallord (bokmål og nynorsk) -> verdi og type.
+_UNIT_WORDS = {
+    "null": 0, "en": 1, "ett": 1, "ein": 1, "eitt": 1, "to": 2, "tre": 3, "fire": 4,
+    "fem": 5, "seks": 6, "sju": 7, "syv": 7, "åtte": 8, "ni": 9,
+}
+_TEEN_WORDS = {
+    "ti": 10, "elleve": 11, "tolv": 12, "tretten": 13, "fjorten": 14, "femten": 15,
+    "seksten": 16, "sytten": 17, "atten": 18, "nitten": 19,
+}
+_TENS_WORDS = {
+    "tjue": 20, "tyve": 20, "tretti": 30, "tredve": 30, "førti": 40, "femti": 50,
+    "seksti": 60, "sytti": 70, "åtti": 80, "nitti": 90,
+}
+_MULT_WORDS = {
+    "hundre": 100, "tusen": 1000, "million": 10**6, "millioner": 10**6, "millionar": 10**6,
+    "milliard": 10**9, "milliarder": 10**9, "milliardar": 10**9,
+}
+_MORPHEMES = (
+    [(w, "unit", v) for w, v in _UNIT_WORDS.items()]
+    + [(w, "teen", v) for w, v in _TEEN_WORDS.items()]
+    + [(w, "tens", v) for w, v in _TENS_WORDS.items()]
+    + [(w, "mult", v) for w, v in _MULT_WORDS.items()]
+    + [("og", "og", 0)]
+)
+_MORPHEMES.sort(key=lambda m: -len(m[0]))
+
+
+def _split_morphemes(token: str) -> list[tuple[str, int]] | None:
+    """Deler «totusenogseksten» i tallmorfemer, eller gir None."""
+    best: dict[int, list] = {0: []}
+    for i in range(len(token)):
+        if i not in best:
+            continue
+        for word, kind, value in _MORPHEMES:
+            if token.startswith(word, i) and i + len(word) not in best:
+                best[i + len(word)] = best[i] + [(kind, value)]
+    parts = best.get(len(token))
+    if not parts or all(k == "og" for k, _ in parts):
+        return None
+    if parts[0][0] == "og" or parts[-1][0] == "og":
+        return None
+    if len(parts) > 1 and len(_evaluate(parts)) != 1:
+        return None  # «tito» er ikke ett tall, og regnes som et vanlig ord
+    return parts
+
+
+def _evaluate(parts: list[tuple[str, int]]) -> list[str]:
+    """Regner ut tallene i en sekvens av morfemer. Gir sifre, og «og» der
+    ordet ikke var en del av et tall («to og to» -> «2 og 2»)."""
+    out: list[str] = []
+    total = cur = 0
+    have = False
+    last = None
+    used_mult = False
+    pending_og = False
+
+    def flush():
+        nonlocal total, cur, have, last, used_mult
+        if have:
+            out.append(str(total + cur))
+        total = cur = 0
+        have = False
+        last = None
+        used_mult = False
+
+    for kind, value in parts:
+        if kind == "og":
+            pending_og = True
+            continue
+        if kind == "mult":
+            if not have:
+                cur, have = 0, True
+            if value == 100:
+                cur = (cur or 1) * 100
+            else:
+                total += (cur or 1) * value
+                cur = 0
+            used_mult = True
+            last = "mult"
+            pending_og = False
+            continue
+        # unit, teen eller tens
+        combine = False
+        if have:
+            small = cur % 100
+            if last == "tens" and kind == "unit" and value < 10 and value > 0 and small % 10 == 0 and not pending_og:
+                cur += value  # tjue + en
+                combine = True
+            elif last == "unit" and kind == "tens" and pending_og and 0 < cur < 10 and not used_mult:
+                cur += value  # fem og tjue
+                combine = True
+            elif last == "mult" and small == 0 and cur % 1000 < 1000:
+                cur += value  # hundre (og) fem, tusen (og) tjue
+                combine = True
+            elif (
+                not pending_og and not used_mult and total == 0 and 10 <= cur <= 99
+                and kind in ("teen", "tens")
+            ):
+                cur = cur * 100 + value  # årstall: nitten åttiåtte, tjue sytten
+                used_mult = True
+                combine = True
+                last = kind
+                pending_og = False
+                continue
+        if not combine:
+            flush()
+            if pending_og:
+                out.append("og")
+            cur, have = value, True
+        last = kind
+        pending_og = False
+    flush()
+    if pending_og:
+        out.append("og")
+    return out
+
+
+def _words_to_digits(tokens: list[str]) -> list[str]:
+    """Erstatter løp av tallord med sifre. «og» tas bare med mellom tallord."""
+    out: list[str] = []
+    i = 0
+    n = len(tokens)
+    while i < n:
+        parts = _split_morphemes(tokens[i]) if not tokens[i].isdigit() else None
+        if parts is None:
+            out.append(tokens[i])
+            i += 1
+            continue
+        run = list(parts)
+        j = i + 1
+        while j < n:
+            if tokens[j] == "og" and j + 1 < n and _split_morphemes(tokens[j + 1]) is not None:
+                run.append(("og", 0))
+                run.extend(_split_morphemes(tokens[j + 1]))
+                j += 2
+                continue
+            nxt = _split_morphemes(tokens[j]) if tokens[j] != "og" else None
+            if nxt is None:
+                break
+            run.extend(nxt)
+            j += 1
+        out.extend(_evaluate(run))
+        i = j
+    return out
 
 
 def _strip_accents(text: str) -> str:
@@ -186,10 +335,12 @@ def normalize(text: str | None) -> str:
     t = _DOUBLE_NOTATION_RE.sub(r"\2", t)
     t = _TRUNCATED_RE.sub(" ", t)
     t = _ANNOTATION_RE.sub(" ", t)
+    # Ordenstall før små bokstaver: «13. februar», men ikke «kom 3. Så».
+    t = _ORDINAL_RE.sub(lambda m: ordinal_to_words(int(m.group(1))), t)
     t = t.lower()
-    t = _expand_numbers(t)
+    t = _expand_digits(t)
     t = t.replace("-", " ").replace("_", " ")
     t = _PUNCT_RE.sub(" ", t)
     t = _strip_accents(t)
     words = [w for w in _SPACE_RE.split(t) if w and w not in FILLERS]
-    return " ".join(words)
+    return " ".join(_words_to_digits(words))

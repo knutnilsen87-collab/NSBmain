@@ -15,13 +15,28 @@ Testsettene bygges fra Språkbankens originalfiler med `scripts/build_testsets.p
 
 ## Dekoding
 
-Samme innstillinger for alle modeller: faster-whisper 1.2.1, språk `no`, oppgave `transcribe`, strålesøk 5, temperatur 0, `condition_on_previous_text=False`, ingen VAD-filter. VAD er slått av fordi den skjuler hallusinasjon i stillhet. GPU: float16; CPU: int8.
+Samme innstillinger for alle modeller: faster-whisper 1.2.1, språk `no` (nynorsk-setningene kan dekodes med `nn` via `--language-from-meta standard`; versjon 1 av målestokken bruker `no` for alt),  oppgave `transcribe`, strålesøk 5, temperatur 0, `condition_on_previous_text=False`, ingen VAD-filter. VAD er slått av fordi den skjuler hallusinasjon i stillhet. GPU: float16; CPU: int8.
 
 ## Normalisering
 
-Lik for fasit og svar (`nsb_eval/normalize.py`): små bokstaver, annotasjoner fjernet (`<ee>`, `%eee`, `%unint`), NB Samtales `sagt\skriftlig` erstattet med skriftlig form, avbrutte ord (`£`) fjernet, fyllord fjernet, tall gjort om til ord på bokmål, tegnsetting og aksenter (unntatt æøå) fjernet.
+Lik for fasit og svar (`nsb_eval/normalize.py`, versjon 2): små bokstaver, annotasjoner fjernet (`<ee>`, `%eee`, `%unint`), NB Samtales `sagt\skriftlig` erstattet med skriftlig form, avbrutte ord (`£`) fjernet, fyllord fjernet, tegnsetting og aksenter (unntatt æøå) fjernet.
+
+Tall gjøres om til sifre på begge sider, slik at skrivemåte ikke teller som feil:
+
+| Fasit | Modellsvar | Begge blir |
+| --- | --- | --- |
+| `totusenogseksten`, `to tusen og seksten` | `2016` | `2016` |
+| `nittenåttiåtte` | `1988` | `1988` |
+| `femogtjue`, `tjuefem` | `25` | `25` |
+| `tjueen null null` | `21.00` | `21 0 0` |
+| `paragraf to hundre og syttien` | `§ 271` | `paragraf 271` |
+| `tre komma fem prosent` | `3,5 %` | `3 komma 5 prosent` |
+
+Ordenstall (`13. februar`) blir ord (`trettende februar`). Ord som bare ligner tall (`tito`, `tusenvis`) røres ikke.
 
 Ikke normalisert, og dermed talt som feil: bokmål mot nynorsk, radikale mot konservative bokmålsformer, sammensatte ord skrevet i to ord.
+
+Endres normaliseringen, scores lagrede resultater på nytt uten å kjøre modellene: `python -m nsb_eval.rescore --results eval/results --models-json models/benchmark/models.json`.
 
 ## Mål
 
@@ -38,4 +53,6 @@ Ikke normalisert, og dermed talt som feil: bokmål mot nynorsk, radikale mot kon
 pwsh -File scripts\run_benchmark.ps1
 ```
 
-Resultat per modell og testsett i `eval/results/<testsett>/<modell>/summary.json` (med modellversjon, git-SHA og manifestets sjekksum) og samlet i `eval/results/BENCHMARK.md`.
+Skriptet sjekker først at alle lydfiler finnes (`nsb_eval.preflight`) og at GPU-en virker; feiler GPU-en av CUDA-årsaker, brukes CPU int8. Det avslutter med feilkode hvis en jobb feiler. En resultatmappe kan bare fortsettes med samme modell og testsett (`run_meta.json`).
+
+Resultat per modell og testsett i `eval/results/<testsett>/<modell>/summary.json` (med Hugging Face-revisjon, sha256 av `model.bin`, git-SHA og manifestets sjekksum) og samlet i `eval/results/BENCHMARK.md`.

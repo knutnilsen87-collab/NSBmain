@@ -18,8 +18,8 @@ Invarianter som ikke skal brytes:
 3. Start-tokenet fjernes fra etikettene før forskyvning.
 4. Strømmen stokkes (`--shuffle_size`, fast frø per epoke).
 5. Fasiter renses med `clean_training_text`: stille opptak med tekst og usikre segmenter forkastes, uttalt tegnsetting (`\Komma`) håndteres.
-6. Train/val/test deles per taler med `split_by_group.py`, og de faste testsettene ekskluderes.
-7. Beste modell lagres i `best/` etter WER på valideringssettet; bare de siste `--keep_last` stegmappene beholdes.
+6. Train/val/test deles per taler med `split_by_group.py`, og de faste testsettene ekskluderes på lydfil, fasittekst og møtedato (`--exclude-manifest` for alle tre testsett og `--exclude-path-contains 20170207 --exclude-path-contains 20170209`).
+7. Beste modell lagres i `best/` etter WER på valideringssettet; bare de siste `--keep_last` stegmappene beholdes. Checkpoints skrives atomisk (`step-N.tmp` -> `step-N`) og lagrer posisjonen i datastrømmen, slik at `--resume` fortsetter der treningen slapp. Etiketter lengre enn 448 tokens hoppes over.
 8. Lazy lasting, `num_workers=0` på Windows, korrupte filer hoppes over.
 
 ## 3. Kjente feil (KFM) som har skjedd

@@ -126,3 +126,29 @@ def test_rejects_true_as_out_dir(tiny_model, tiny_data):
         capture_output=True, text=True, timeout=300, check=False,
     )
     assert res.returncode != 0 and "Ugyldig --out_dir" in res.stderr
+
+
+def test_resume_continues_data_stream_and_saves_atomically(tiny_model, tiny_data, tmp_path):
+    out = tmp_path / "resume"
+    base = [
+        sys.executable, str(SCRIPT), "--train_jsonl", str(tiny_data / "train.jsonl"),
+        "--val_jsonl", str(tiny_data / "val.jsonl"), "--out_dir", str(out), "--model_name", str(tiny_model),
+        "--eval_steps", "100", "--save_steps", "3", "--logging_steps", "1", "--batch_size", "1",
+        "--warmup_steps", "1", "--shuffle_size", "3", "--keep_last", "5",
+    ]
+    first = subprocess.run([*base, "--max_steps", "3"], capture_output=True, text=True, timeout=900, check=False)
+    assert first.returncode == 0, first.stderr[-3000:]
+    st = torch.load(out / "checkpoints" / "step-3" / "train_state.pt", map_location="cpu", weights_only=False)
+    assert st["step"] == 3 and st["data_pos"]["rows_consumed"] >= 3
+    second = subprocess.run([*base, "--max_steps", "6", "--resume"], capture_output=True, text=True, timeout=900, check=False)
+    assert second.returncode == 0, second.stderr[-3000:]
+    st2 = torch.load(out / "checkpoints" / "step-6" / "train_state.pt", map_location="cpu", weights_only=False)
+    pos1, pos2 = st["data_pos"], st2["data_pos"]
+    # Fortsatte etter der den slapp: enten lenger ut i samme epoke, eller i neste epoke.
+    assert (pos2["epoch"], pos2["rows_consumed"]) > (pos1["epoch"], pos1["rows_consumed"])
+    assert not list((out / "checkpoints").glob("*.tmp"))
+    # Ufullstendig checkpoint skal stoppe gjenopptaking i stedet for å starte på nytt fra steg 0.
+    (out / "checkpoints" / "step-9").mkdir()
+    (out / "checkpoints" / "step-9" / "config.json").write_text("{}", encoding="utf-8")
+    third = subprocess.run([*base, "--max_steps", "12", "--resume"], capture_output=True, text=True, timeout=900, check=False)
+    assert third.returncode != 0

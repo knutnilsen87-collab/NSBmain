@@ -129,6 +129,8 @@ class JsonlAudioIterable(IterableDataset):
         self.seed = seed
         self.dictation = dictation
         self.epoch = 0
+        self.rows_consumed = 0  # rader lest fra strømmen i gjeldende epoke
+        self.skip_rows = 0  # settes ved gjenopptaking
         self.stats = stats if stats is not None else {}
 
     def _iter_rows(self) -> Iterator[Dict[str, Any]]:
@@ -149,7 +151,12 @@ class JsonlAudioIterable(IterableDataset):
         if self.shuffle_size > 1:
             rows = shuffle_buffer(rows, self.shuffle_size, self.seed + self.epoch)
         self.epoch += 1
+        skip, self.skip_rows = self.skip_rows, 0
+        self.rows_consumed = 0
         for row in rows:
+            self.rows_consumed += 1
+            if self.rows_consumed <= skip:
+                continue  # samme deterministiske rekkefølge som før avbruddet
             audio_path = row.get("audio") or row.get("path") or row.get("audio_path") or row.get("audio_filepath")
             raw_text = row.get("text") or row.get("transcript") or row.get("sentence")
             if not audio_path:
@@ -175,6 +182,9 @@ class JsonlAudioIterable(IterableDataset):
             inputs = self.processor.feature_extractor(wav, sampling_rate=sr, return_tensors="pt")
             # Tokenizeren har språk/oppgave som prefiks (set_prefix_tokens i main).
             label_ids = self.processor.tokenizer(text).input_ids
+            if len(label_ids) > 448:  # Whispers maks dekoderlengde
+                self._bump("skip_label_too_long")
+                continue
             self._bump("used")
 
             yield {
@@ -211,8 +221,12 @@ class Collator:
         return {"input_features": input_features, "labels": labels_padded}
 
 # -------------------- Checkpoint (crash-safe resume)
-def save_ckpt(out_dir: str, step: int, model, processor, optim, sched, scaler):
-    ckpt_dir = os.path.join(out_dir, "checkpoints", f"step-{step}")
+def save_ckpt(out_dir: str, step: int, model, processor, optim, sched, scaler, data_pos: Optional[dict] = None):
+    """Skriver til step-N.tmp og døper om når alt er skrevet, slik at et
+    avbrudd midt i lagringen aldri etterlater et halvt checkpoint."""
+    final_dir = os.path.join(out_dir, "checkpoints", f"step-{step}")
+    ckpt_dir = final_dir + ".tmp"
+    shutil.rmtree(ckpt_dir, ignore_errors=True)
     os.makedirs(ckpt_dir, exist_ok=True)
 
     # Save HF artifacts
@@ -229,9 +243,12 @@ def save_ckpt(out_dir: str, step: int, model, processor, optim, sched, scaler):
         "cuda_rng": torch.cuda.get_rng_state_all() if torch.cuda.is_available() else None,
         "numpy_rng": np.random.get_state(),
     }
+    state["data_pos"] = data_pos or {}
     torch.save(state, os.path.join(ckpt_dir, "train_state.pt"))
+    shutil.rmtree(final_dir, ignore_errors=True)
+    os.replace(ckpt_dir, final_dir)
 
-def load_ckpt(ckpt_dir: str, model, processor, optim, sched, scaler) -> int:
+def load_ckpt(ckpt_dir: str, model, processor, optim, sched, scaler) -> tuple:
     # Load model/processor from same ckpt dir
     model2 = model.from_pretrained(ckpt_dir)
     model.load_state_dict(model2.state_dict())
@@ -242,7 +259,8 @@ def load_ckpt(ckpt_dir: str, model, processor, optim, sched, scaler) -> int:
 
     st_path = os.path.join(ckpt_dir, "train_state.pt")
     if os.path.exists(st_path):
-        st = torch.load(st_path, map_location="cpu")
+        # Egne checkpoints (inneholder numpy-RNG); torch >= 2.6 krever weights_only=False for dette.
+        st = torch.load(st_path, map_location="cpu", weights_only=False)
         optim.load_state_dict(st["optimizer"])
         sched.load_state_dict(st["scheduler"])
         if scaler is not None and st.get("scaler") is not None:
@@ -252,8 +270,10 @@ def load_ckpt(ckpt_dir: str, model, processor, optim, sched, scaler) -> int:
             torch.cuda.set_rng_state_all(st["cuda_rng"])
         if st.get("numpy_rng") is not None:
             np.random.set_state(st["numpy_rng"])
-        return int(st.get("step", 0))
-    return 0
+        return int(st.get("step", 0)), st.get("data_pos") or {}
+    raise RuntimeError(
+        f"{st_path} mangler. Checkpointet er ufullstendig; slett {ckpt_dir} eller start uten --resume."
+    )
 
 # -------------------- Eval
 def evaluate_wer(model, processor, val_loader, device, language: str) -> dict:
@@ -366,7 +386,9 @@ def main():
     if args.resume:
         ckpt = latest_checkpoint_dir(ckpt_root)
         if ckpt:
-            start_step = load_ckpt(ckpt, model, processor, optim, sched, scaler)
+            start_step, data_pos = load_ckpt(ckpt, model, processor, optim, sched, scaler)
+            train_ds.epoch = int(data_pos.get("epoch", 0))
+            train_ds.skip_rows = int(data_pos.get("rows_consumed", 0))
             processor.tokenizer.set_prefix_tokens(language=args.language, task="transcribe")
             log_state(args.out_dir, phase="RESUME", message=f"Resumed from {ckpt}", step=start_step)
 
@@ -460,7 +482,8 @@ def main():
 
         # Periodic checkpoint (power-loss safe)
         if step % args.save_steps == 0:
-            save_ckpt(args.out_dir, step, model, processor, optim, sched, scaler)
+            save_ckpt(args.out_dir, step, model, processor, optim, sched, scaler,
+                      data_pos={"epoch": max(train_ds.epoch - 1, 0), "rows_consumed": train_ds.rows_consumed})
             rotate_checkpoints(ckpt_root, args.keep_last)
             log_state(args.out_dir, phase="TRAIN", max_steps=args.max_steps, )
 

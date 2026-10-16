@@ -49,4 +49,4 @@ def test_no_unhandled_notation_after_normalization():
     for name in EXPECTED:
         for line in (TESTSETS / name).read_text(encoding="utf-8").splitlines():
             norm = normalize(json.loads(line)["text"])
-            assert not any(ch in norm for ch in "\\£%<>_0123456789"), norm
+            assert not any(ch in norm for ch in "\\£%<>_"), norm

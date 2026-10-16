@@ -36,6 +36,11 @@ from .normalize import normalize
 __all__ = ["evaluate", "main", "summarize"]
 
 SCHEMA = "nsb-eval-2"
+NORMALIZER = "nsb_eval.normalize v2 (tall som sifre)"
+# Felt som må være like for å kunne fortsette en kjøring i samme mappe.
+IDENTITY_KEYS = ("backend", "model", "label", "language", "language_from_meta", "beam_size", "vad_filter", "manifest_sha256")
+# Rettskrivning i manifestet -> Whisper-språkkode.
+STANDARD_TO_LANGUAGE = {"bm": "no", "nb": "no", "nn": "nn"}
 
 
 def _git_sha() -> str | None:
@@ -83,6 +88,35 @@ def score_item(item_id: str, reference: str, hypothesis: str, meta: dict | None 
         "flags": item_flags(ref_n, hyp_n, w),
         "meta": meta or {},
     }
+
+
+def rescore_rows(rows: list[dict]) -> list[dict]:
+    """Regner feiltall og flagg på nytt fra rå fasit og modellsvar, med
+    gjeldende normalisering. Tid, lydlengde og metadata beholdes."""
+    out = []
+    for r in rows:
+        if r.get("error") or "hypothesis" not in r:
+            out.append(r)
+            continue
+        new = score_item(r["id"], r["reference"], r["hypothesis"], r.get("meta"))
+        for k in ("duration", "segments", "audio", "processing_seconds"):
+            if k in r:
+                new[k] = r[k]
+        out.append(new)
+    return out
+
+
+def _check_identity(out: Path, identity: dict, resume: bool) -> None:
+    meta_path = out / "run_meta.json"
+    if resume and meta_path.exists():
+        old = json.loads(meta_path.read_text(encoding="utf-8"))
+        diff = {k: (old.get(k), identity.get(k)) for k in IDENTITY_KEYS if old.get(k) != identity.get(k)}
+        if diff:
+            raise SystemExit(
+                f"{out} inneholder resultater fra en annen kjøring ({diff}). "
+                "Bruk en ny --out-dir, eller --no-resume for å starte på nytt."
+            )
+    meta_path.write_text(json.dumps(identity, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
 def summarize(rows: list[dict], group_by: list[str] | None = None) -> dict:
@@ -148,7 +182,8 @@ def summarize(rows: list[dict], group_by: list[str] | None = None) -> dict:
     for key in group_by or []:
         groups = defaultdict(list)
         for r in speech:
-            groups[str(r.get("meta", {}).get(key, "ukjent"))].append(r)
+            value = r.get("meta", {}).get(key)
+            groups["ukjent" if value in (None, "") else str(value)].append(r)
         summary[f"by_{key}"] = {g: agg(sub) for g, sub in sorted(groups.items())}
     if failed:
         summary["failed_examples"] = [{"id": r["id"], "error": r["error"]} for r in failed[:10]]
@@ -166,6 +201,7 @@ def evaluate(
     limit: int | None = None,
     group_by: list[str] | None = None,
     resume: bool = True,
+    language_from_meta: str | None = None,
     log=print,
 ) -> dict:
     out = Path(out_dir)
@@ -174,6 +210,17 @@ def evaluate(
     items = load_manifest(manifest, audio_root=audio_root, path_map=path_map)
     if limit:
         items = items[:limit]
+    identity = {
+        "backend": backend_kind,
+        "model": backend_kwargs.get("model"),
+        "label": backend_kwargs.get("label"),
+        "language": backend_kwargs.get("language"),
+        "beam_size": backend_kwargs.get("beam_size"),
+        "vad_filter": backend_kwargs.get("vad_filter"),
+        "language_from_meta": language_from_meta,
+        "manifest_sha256": file_sha256(manifest),
+    }
+    _check_identity(out, identity, resume)
     done = _load_done(items_path) if resume else {}
     if not resume and items_path.exists():
         items_path.unlink()
@@ -189,7 +236,10 @@ def evaluate(
                 continue
             t0 = time.perf_counter()
             try:
-                result = backend.transcribe(item.audio)
+                lang = None
+                if language_from_meta:
+                    lang = STANDARD_TO_LANGUAGE.get(str(item.meta.get(language_from_meta, "")).lower())
+                result = backend.transcribe(item.audio, language=lang)
                 row = score_item(item.id, item.text, result["text"], item.meta)
                 row["duration"] = result.get("duration", 0.0)
                 row["segments"] = result.get("segments")
@@ -204,19 +254,20 @@ def evaluate(
                 log(f"[nsb_eval] {i}/{len(items)}")
                 t_last = time.time()
 
-    rows = [done[it.id] for it in items if it.id in done]
+    rows = rescore_rows([done[it.id] for it in items if it.id in done])
     summary = {
         "schema": SCHEMA,
         "testset": testset or Path(manifest).stem,
         "manifest": str(manifest),
-        "manifest_sha256": file_sha256(manifest),
+        "manifest_sha256": identity["manifest_sha256"],
         "model": backend.describe(),
         "started_utc": started.isoformat(),
         "finished_utc": dt.datetime.now(dt.timezone.utc).isoformat(),
         "git_sha": _git_sha(),
         "python": sys.version.split()[0],
         "platform": platform.platform(),
-        "normalizer": "nsb_eval.normalize v1",
+        "normalizer": NORMALIZER,
+        "language_from_meta": language_from_meta,
         **summarize(rows, group_by=group_by),
     }
     (out / "summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -252,7 +303,11 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--compute-type", default="default")
     ap.add_argument("--language", default="no")
     ap.add_argument("--beam-size", type=int, default=5)
+    ap.add_argument("--language-from-meta", default=None,
+                    help="Velg språk per setning fra dette metadatafeltet (bm -> no, nn -> nn), f.eks. standard")
     ap.add_argument("--vad", action="store_true", help="Slå på VAD-filter (av som standard)")
+    ap.add_argument("--model-revision", default=None, help="Hugging Face-commit for modellen (for sporbarhet)")
+    ap.add_argument("--model-sha256", default=None, help="sha256 av model.bin (for sporbarhet)")
     ap.add_argument("--answers-file", default=None, help="Kun for --backend mock")
     ap.add_argument("--limit", type=int, default=None)
     ap.add_argument("--group-by", action="append", default=None, help="Metadatafelt å bryte ned på")
@@ -270,6 +325,8 @@ def main(argv: list[str] | None = None) -> int:
             "beam_size": args.beam_size,
             "vad_filter": args.vad,
             "label": args.label,
+            "model_revision": args.model_revision,
+            "model_sha256": args.model_sha256,
         }
     else:
         kwargs = {"answers_file": args.answers_file, "label": args.label}
@@ -285,6 +342,7 @@ def main(argv: list[str] | None = None) -> int:
         limit=args.limit,
         group_by=args.group_by,
         resume=not args.no_resume,
+        language_from_meta=args.language_from_meta,
     )
     return 0 if summary["complete"] else 2
 

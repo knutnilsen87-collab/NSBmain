@@ -35,6 +35,7 @@ $ErrorActionPreference = 'Continue'
 # Windows PowerShell 5.1 skriver ellers omdirigering (*>>) som UTF-16.
 $PSDefaultParameterValues['Out-File:Encoding'] = 'utf8'
 Set-Location $Root
+if ($Device -eq 'cpu' -and $ComputeType -eq 'float16') { $ComputeType = 'int8' }  # float16 virker ikke på CPU
 $Results = Join-Path $Root 'eval/results'
 New-Item -ItemType Directory -Force -Path $Results | Out-Null
 $Log = Join-Path $Results 'RUN.log'
@@ -79,9 +80,10 @@ if (-not $SkipSetup) {
     }
     Write-Log 'Installerer faster-whisper og CUDA-biblioteker (kan ta noen minutter)'
     & $Py -m pip install --upgrade pip *>> $Log
-    & $Py -m pip install 'faster-whisper==1.2.1' 'av>=11,<16' 'huggingface_hub>=0.23,<1.0' 'nvidia-cublas-cu12' 'nvidia-cudnn-cu12==9.*' *>> $Log
+    & $Py -m pip install 'faster-whisper==1.2.1' 'av>=11,<16' 'huggingface_hub[hf_xet]>=0.23,<1.0' 'nvidia-cublas-cu12' 'nvidia-cudnn-cu12==9.*' *>> $Log
     if ($LASTEXITCODE -ne 0) { Stop-WithError 'pip install feilet; se RUN.log' }
 }
+if (-not (Test-Path $Py) -and -not (Get-Command $Py -ErrorAction SilentlyContinue)) { Stop-WithError "Fant ikke Python i $Py. Kjør uten -SkipSetup første gang." }
 $site = (& $Py -c "import sysconfig; print(sysconfig.get_paths()['purelib'])").Trim()
 $sep = [System.IO.Path]::PathSeparator
 foreach ($sub in @('nvidia/cublas/bin', 'nvidia/cudnn/bin', 'nvidia/cuda_nvrtc/bin', 'nvidia/cuda_runtime/bin')) {
@@ -113,6 +115,10 @@ $registry = Get-Content $registryPath -Raw | ConvertFrom-Json
 # ---------- 3. Stillhetssett
 & $Py -m nsb_eval.silence --out-dir eval/testsets/silence_v1 *>> $Log
 if ($LASTEXITCODE -ne 0) { Stop-WithError 'Kunne ikke lage stillhetssettet' }
+$preflightArgs = @(); foreach ($ts in $Testsets) { $preflightArgs += @('--testset', $ts) }
+if ($Limit -gt 0) { $preflightArgs += @('--limit', "$Limit") }
+& $Py -m nsb_eval.preflight --root $Root @preflightArgs *>> $Log
+if ($LASTEXITCODE -ne 0) { Stop-WithError 'Lydfiler mangler for et eller flere testsett (se RUN.log, linjer med [mangler])' }
 
 function Get-TestsetArgs([string]$Name) {
     if ($Name -eq 'silence_v1') {
@@ -130,7 +136,16 @@ if ($Device -eq 'cuda') {
     & $Py -m nsb_eval.runner @(Get-TestsetArgs 'npsc_test_20170207') --limit 3 --testset gpu_probe --backend faster-whisper `
         --model $registry.$firstModel.path --label $firstModel --device cuda --compute-type $ComputeType --out-dir $probe *>> $Log
     if ($LASTEXITCODE -ne 0) {
-        Write-Log 'GPU virker ikke (se RUN.log). Bytter til CPU int8; det tar vesentlig lengre tid.'
+        $probeErrors = @()
+        $probeItems = Join-Path $probe 'items.jsonl'
+        if (Test-Path $probeItems) {
+            $probeErrors = @(Get-Content $probeItems | Where-Object { $_.Trim() } | ForEach-Object { ($_ | ConvertFrom-Json).error } | Where-Object { $_ })
+        }
+        $cudaLike = @($probeErrors | Where-Object { $_ -match 'cuda|cublas|cudnn|nvrtc|\.dll|GPU|device' })
+        if ($probeErrors.Count -gt 0 -and $cudaLike.Count -eq 0) {
+            Stop-WithError "GPU-sjekken feilet av en annen grunn enn CUDA: $($probeErrors[0])"
+        }
+        Write-Log "GPU virker ikke ($(if ($cudaLike) { $cudaLike[0] } else { 'se RUN.log' })). Bytter til CPU int8; det tar vesentlig lengre tid."
         $Device = 'cpu'; $ComputeType = 'int8'
         $status.device = $Device; $status.compute_type = $ComputeType
     } else {
@@ -141,10 +156,12 @@ if ($Device -eq 'cuda') {
 
 # ---------- 5. Målinger
 $status.phase = 'evaluate'; Save-Status
+$failedJobs = 0
 foreach ($m in $Models) {
     $entry = $registry.$m
     if (-not $entry.path) {
         $status.jobs["$m"] = [ordered]@{ state = 'skipped'; reason = "$($entry.error)" }
+        $failedJobs++
         Write-Log "Hopper over ${m}: $($entry.error)"
         Save-Status
         continue
@@ -157,9 +174,12 @@ foreach ($m in $Models) {
         Save-Status
         Write-Log "Kjører $key på $Device/$ComputeType"
         $limitArgs = @(); if ($Limit -gt 0) { $limitArgs = @('--limit', "$Limit") }
+        if ($entry.revision) { $limitArgs += @('--model-revision', "$($entry.revision)") }
+        if ($entry.model_sha256) { $limitArgs += @('--model-sha256', "$($entry.model_sha256)") }
         & $Py -m nsb_eval.runner @(Get-TestsetArgs $ts) --testset $ts --backend faster-whisper --model $entry.path --label $m `
             --device $Device --compute-type $ComputeType --out-dir $out @limitArgs *>> (Join-Path $out 'run.log')
         $code = $LASTEXITCODE
+        if ($code -ne 0) { $failedJobs++ }
         $summaryPath = Join-Path $out 'summary.json'
         $job = [ordered]@{ state = $(if ($code -eq 0) { 'done' } else { 'failed' }); exit_code = $code; finished = (Get-Date).ToString('o') }
         if (Test-Path $summaryPath) {
@@ -177,7 +197,14 @@ foreach ($m in $Models) {
 # ---------- 6. Rapport
 $status.phase = 'report'; Save-Status
 & $Py -m nsb_eval.report --results eval/results --out eval/results/BENCHMARK.md *>> $Log
-$status.phase = 'done'
+if ($LASTEXITCODE -ne 0) { Stop-WithError 'Rapporten kunne ikke lages; se RUN.log' }
+$status.phase = $(if ($failedJobs -gt 0) { 'done_with_failures' } else { 'done' })
+$status.failed_jobs = $failedJobs
 $status.finished = (Get-Date).ToString('o')
 Save-Status
+if ($failedJobs -gt 0) {
+    Write-Log "Ferdig med $failedJobs feilede jobber. Se RUN_STATUS.json og run.log i hver resultatmappe."
+    exit 1
+}
 Write-Log 'Ferdig. Se eval/results/BENCHMARK.md'
+exit 0

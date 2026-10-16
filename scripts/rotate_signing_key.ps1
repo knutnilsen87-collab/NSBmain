@@ -1,17 +1,19 @@
 ﻿<#
 .SYNOPSIS
-  Lager nytt RSA-nøkkelpar for signering av loggfiler (FBL) og trekker det gamle tilbake.
+  Sørger for at signeringsnøkkelen for loggfiler (FBL) ikke er den lekkede nøkkelen.
 
 .DESCRIPTION
-  Den gamle private nøkkelen (security/keys/private_key.xml) lå i den offentlige
-  git-historikken fram til oktober 2026 og regnes som kompromittert. Den ble bare
-  brukt til å signere lokale loggfiler. Skriptet:
+  Den gamle private nøkkelen lå i den offentlige git-historikken fram til
+  2026-10-16. Fingeravtrykket (sha256 av RSA-modulus) ligger fast i
+  docs/revoked_keys.json. Skriptet er trygt å kjøre flere ganger:
 
-  1. Lager et nytt 2048-bits RSA-par i formatet FBL-skriptene bruker (.NET XML).
-  2. Lagrer privat nøkkel i security/keys/ (git-ignorert) og offentlig nøkkel i
-     security/pubkeys/public_key.xml.
-  3. Skriver security/pubkeys/REVOKED.json med fingeravtrykket til den gamle
-     offentlige nøkkelen, slik at gamle signaturer kan avvises.
+  - Finnes det en lokal nøkkel som ikke er tilbaketrukket, gjør det ingenting.
+  - Ellers lages et nytt 2048-bits par i formatet FBL-skriptene bruker
+    (privat i security/keys/, git-ignorert; offentlig i security/pubkeys/).
+  - security/pubkeys/REVOKED.json skrives med alle tilbaketrukne nøkler, slik
+    at signaturer laget med dem kan avvises.
+
+  Virker i Windows PowerShell 5.1 og PowerShell 7.
 #>
 param([string]$Root = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path)
 
@@ -22,30 +24,47 @@ New-Item -ItemType Directory -Force -Path $keysDir, $pubDir | Out-Null
 $privPath = Join-Path $keysDir 'private_key.xml'
 $pubPath = Join-Path $pubDir 'public_key.xml'
 $revokedPath = Join-Path $pubDir 'REVOKED.json'
+$knownPath = Join-Path $Root 'docs/revoked_keys.json'
 
-function Get-Fingerprint([string]$Path) {
-    return (Get-FileHash -Algorithm SHA256 -Path $Path).Hash.ToLowerInvariant()
+function Get-ModulusFingerprint([string]$Path) {
+    if (-not (Test-Path $Path)) { return $null }
+    $xml = [xml](Get-Content -Path $Path -Raw)
+    $modulus = [System.Convert]::FromBase64String($xml.RSAKeyValue.Modulus)
+    $sha = [System.Security.Cryptography.SHA256]::Create()
+    try { $hash = $sha.ComputeHash($modulus) } finally { $sha.Dispose() }
+    return (-join ($hash | ForEach-Object { $_.ToString('x2') }))
 }
 
 $revoked = @()
-if (Test-Path $revokedPath) { $revoked = @(Get-Content $revokedPath -Raw | ConvertFrom-Json) }
-if (Test-Path $pubPath) {
-    $revoked += [ordered]@{
-        public_key_sha256 = (Get-Fingerprint $pubPath)
-        revoked_at        = (Get-Date).ToString('o')
-        reason            = 'Privat nøkkel lå i offentlig git-historikk (knutnilsen87-collab/NSBmain) fram til 2026-10-16.'
+if (Test-Path $knownPath) { $revoked += @(Get-Content $knownPath -Raw | ConvertFrom-Json) }
+$revokedSet = @{}
+foreach ($r in $revoked) { $revokedSet[$r.modulus_sha256] = $true }
+
+$current = Get-ModulusFingerprint $privPath
+if ($current -and -not $revokedSet.ContainsKey($current) -and (Get-ModulusFingerprint $pubPath) -eq $current) {
+    Write-Host "Signeringsnøkkelen er allerede rotert (modulus sha256 $current)."
+} else {
+    $oldPub = Get-ModulusFingerprint $pubPath
+    foreach ($fp in @($current, $oldPub)) {
+        if ($fp -and -not $revokedSet.ContainsKey($fp)) {
+            $revoked += [pscustomobject]@{
+                modulus_sha256 = $fp
+                bits           = 2048
+                revoked        = (Get-Date).ToString('yyyy-MM-dd')
+                reason         = 'Erstattet ved rotasjon (lokal nøkkel uten gyldig par eller tidligere nøkkel).'
+            }
+            $revokedSet[$fp] = $true
+        }
     }
+    $rsa = New-Object System.Security.Cryptography.RSACryptoServiceProvider(2048)
+    try {
+        Set-Content -Path $privPath -Value ($rsa.ToXmlString($true)) -Encoding UTF8 -NoNewline
+        Set-Content -Path $pubPath -Value ($rsa.ToXmlString($false)) -Encoding UTF8 -NoNewline
+    } finally {
+        $rsa.Dispose()
+    }
+    Write-Host "Ny signeringsnøkkel (modulus sha256 $(Get-ModulusFingerprint $pubPath))."
+    Write-Host "Privat nøkkel: $privPath (git-ignorert, skal aldri committes)"
 }
-
-$rsa = [System.Security.Cryptography.RSACryptoServiceProvider]::new(2048)
-try {
-    Set-Content -Path $privPath -Value ($rsa.ToXmlString($true)) -Encoding utf8 -NoNewline
-    Set-Content -Path $pubPath -Value ($rsa.ToXmlString($false)) -Encoding utf8 -NoNewline
-} finally {
-    $rsa.Dispose()
-}
-ConvertTo-Json -InputObject @($revoked) -Depth 4 | Set-Content -Path $revokedPath -Encoding utf8
-
-Write-Host "Ny offentlig nøkkel: $pubPath (sha256 $(Get-Fingerprint $pubPath))"
-Write-Host "Privat nøkkel: $privPath (git-ignorert, skal aldri committes)"
-Write-Host "Tilbaketrukket: $($revoked.Count) gamle nøkler i $revokedPath"
+ConvertTo-Json -InputObject @($revoked) -Depth 4 | Set-Content -Path $revokedPath -Encoding UTF8
+Write-Host "Tilbaketrukket: $($revoked.Count) nøkler i $revokedPath"

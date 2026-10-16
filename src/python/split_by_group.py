@@ -8,7 +8,13 @@ valideringstallet måler pugging.
     python src/python/split_by_group.py --in data/manifest.trainable.jsonl \
         --out-dir build/splits_v2 --group-regex "(no\\d+x\\d+)" \
         --exclude-manifest eval/testsets/npsc_test_20170207.jsonl \
-        --exclude-manifest eval/testsets/nb_samtale_test.jsonl
+        --exclude-manifest eval/testsets/npsc_eval_20170209.jsonl \
+        --exclude-manifest eval/testsets/nb_samtale_test.jsonl \
+        --exclude-path-contains 20170207 --exclude-path-contains 20170209
+
+Utelukkelse skjer på tre måter: samme lydfil (de tre siste leddene i stien),
+samme fasittekst (minst fire ord, etter normalisering) og stier som inneholder
+en oppgitt streng, for eksempel NPSC-møtedatoene.
 """
 
 from __future__ import annotations
@@ -59,6 +65,8 @@ def split(
     group_regex: str | None = None,
     exclude_tails: set[str] | None = None,
     text_leakage: str = "drop-train",
+    exclude_texts: set[str] | None = None,
+    exclude_path_contains: list[str] | None = None,
 ) -> tuple[dict[str, list[dict]], dict]:
     report = Counter()
     out = {"train": [], "val": [], "test": []}
@@ -68,6 +76,13 @@ def split(
     for row in rows:
         if exclude_tails and _tail(_audio(row)) in exclude_tails:
             report["excluded_fixed_testset"] += 1
+            continue
+        audio_norm = _audio(row).replace("\\", "/").lower()
+        if exclude_path_contains and any(sub.lower() in audio_norm for sub in exclude_path_contains):
+            report["excluded_path_match"] += 1
+            continue
+        if exclude_texts and normalize(row.get("text", "")) in exclude_texts:
+            report["excluded_fixed_testset_text"] += 1
             continue
         g = group_of(row, group_field, group_regex)
         b = group_bucket(g, 1000)
@@ -109,17 +124,27 @@ def main(argv=None) -> int:
     ap.add_argument("--group-field", default=None, help="Felt i manifestet med taler-id")
     ap.add_argument("--group-regex", default=None, help="Regex med én gruppe som henter taler-id fra lydstien")
     ap.add_argument("--exclude-manifest", action="append", default=[], help="Faste testsett som aldri skal trenes på")
+    ap.add_argument("--exclude-path-contains", action="append", default=[],
+                    help="Utelukk lyd der stien inneholder dette (f.eks. møtedato 20170207)")
     ap.add_argument("--text-leakage", choices=["drop-train", "drop-eval", "ignore"], default="drop-train")
     args = ap.parse_args(argv)
 
     with open(args.inp, encoding="utf-8-sig") as f:
         rows = [json.loads(line) for line in f if line.strip()]
     exclude = set()
+    exclude_texts = set()
     for m in args.exclude_manifest:
         with open(m, encoding="utf-8") as f:
-            exclude.update(_tail(_audio(json.loads(line))) for line in f if line.strip())
+            for line in f:
+                if line.strip():
+                    row = json.loads(line)
+                    exclude.add(_tail(_audio(row)))
+                    text = normalize(row.get("text", ""))
+                    if len(text.split()) >= 4:  # korte fraser («ja takk») er for vanlige til å utelukke
+                        exclude_texts.add(text)
     parts, summary = split(
-        rows, args.val_pct, args.test_pct, args.group_field, args.group_regex, exclude, args.text_leakage
+        rows, args.val_pct, args.test_pct, args.group_field, args.group_regex, exclude, args.text_leakage,
+        exclude_texts=exclude_texts, exclude_path_contains=args.exclude_path_contains,
     )
     out = Path(args.out_dir)
     out.mkdir(parents=True, exist_ok=True)
