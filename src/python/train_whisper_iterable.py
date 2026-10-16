@@ -298,6 +298,9 @@ def evaluate_wer(model, processor, val_loader, device, language: str) -> dict:
 
 
 def rotate_checkpoints(ckpt_root: str, keep_last: int):
+    for d in os.listdir(ckpt_root) if os.path.isdir(ckpt_root) else []:
+        if d.endswith(".tmp"):  # rester etter avbrutt lagring
+            shutil.rmtree(os.path.join(ckpt_root, d), ignore_errors=True)
     steps = []
     for d in os.listdir(ckpt_root) if os.path.isdir(ckpt_root) else []:
         m = re.match(r"step-(\d+)$", d)

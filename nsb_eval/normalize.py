@@ -156,11 +156,23 @@ def _digits(group: str) -> str:
     return " ".join(group)
 
 
+def _clock(m: re.Match) -> str:
+    """Klokkeslett i samme form som når det sies med ord: «21.00» = «tjueen
+    null null» -> «21 0 0»; «12.30» = «tolv tretti» -> «1230»; «9.30» =
+    «ni tretti» -> «9 30»."""
+    hour, minute = int(m.group(1)), m.group(2)
+    if minute == "00":
+        return f" {hour} 0 0 "
+    if hour >= 10:
+        return f" {hour}{minute} "
+    return f" {hour} {int(minute)} "
+
+
 def _expand_digits(text: str) -> str:
     """Gjør skrevne tall entydige. Tall beholdes som sifre; tallord gjøres om
     til sifre etterpå (``_words_to_digits``), slik at «2016» og
     «totusenogseksten» blir like."""
-    text = _CLOCK_RE.sub(lambda m: f" {int(m.group(1))} {m.group(2) if m.group(2) != '00' else '0 0'} ", text)
+    text = _CLOCK_RE.sub(_clock, text)
     text = _PERCENT_RE.sub(r"\1 prosent", text)
     text = _PARAGRAPH_RE.sub(" paragraf ", text)
     text = _THOUSANDS_RE.sub(lambda m: re.sub(r"[ . ]", "", m.group(0)), text)
@@ -237,6 +249,12 @@ def _evaluate(parts: list[tuple[str, int]]) -> list[str]:
         if kind == "og":
             pending_og = True
             continue
+        if kind == "num":  # et tall skrevet med sifre, f.eks. «2» i «2 millioner»
+            flush()
+            if pending_og:
+                out.append("og")
+            cur, have, last, pending_og = value, True, "num", False
+            continue
         if kind == "mult":
             if not have:
                 cur, have = 0, True
@@ -292,6 +310,10 @@ def _words_to_digits(tokens: list[str]) -> list[str]:
     n = len(tokens)
     while i < n:
         parts = _split_morphemes(tokens[i]) if not tokens[i].isdigit() else None
+        if parts is None and tokens[i].isdigit() and i + 1 < n:
+            nxt = _split_morphemes(tokens[i + 1])
+            if nxt and nxt[0][0] == "mult":
+                parts = [("num", int(tokens[i]))]  # «2 millioner» = «to millioner»
         if parts is None:
             out.append(tokens[i])
             i += 1

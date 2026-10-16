@@ -90,6 +90,11 @@ def test_normalize(raw, expected):
         ("hundre år", "100 år"),
         ("to og to", "2 og 2"),
         ("en bil og to hus", "1 bil og 2 hus"),
+        ("en million kroner", "1 million kroner"),
+        ("to millioner", "2 millioner"),
+        ("klokka tolv tretti", "klokka 12.30"),
+        ("klokka seksten seksten", "klokka 16.16"),
+        ("klokka ti tretti", "klokka 10.30"),
     ],
 )
 def test_number_words_and_digits_compare_equal(words, digits):

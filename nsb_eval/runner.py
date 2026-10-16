@@ -38,7 +38,10 @@ __all__ = ["evaluate", "main", "summarize"]
 SCHEMA = "nsb-eval-2"
 NORMALIZER = "nsb_eval.normalize v2 (tall som sifre)"
 # Felt som må være like for å kunne fortsette en kjøring i samme mappe.
-IDENTITY_KEYS = ("backend", "model", "label", "language", "language_from_meta", "beam_size", "vad_filter", "manifest_sha256")
+IDENTITY_KEYS = (
+    "backend", "model", "label", "model_revision", "device", "compute_type", "language",
+    "language_from_meta", "beam_size", "vad_filter", "manifest_sha256",
+)
 # Rettskrivning i manifestet -> Whisper-språkkode.
 STANDARD_TO_LANGUAGE = {"bm": "no", "nb": "no", "nn": "nn"}
 
@@ -214,6 +217,9 @@ def evaluate(
         "backend": backend_kind,
         "model": backend_kwargs.get("model"),
         "label": backend_kwargs.get("label"),
+        "model_revision": backend_kwargs.get("model_revision"),
+        "device": backend_kwargs.get("device"),
+        "compute_type": backend_kwargs.get("compute_type"),
         "language": backend_kwargs.get("language"),
         "beam_size": backend_kwargs.get("beam_size"),
         "vad_filter": backend_kwargs.get("vad_filter"),

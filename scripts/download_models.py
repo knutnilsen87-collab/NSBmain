@@ -119,8 +119,15 @@ def main(argv=None) -> int:
             registry[name] = fetch(name, spec, out)
             print(f"[ok] {name} -> {registry[name]['path']}")
         except Exception as exc:  # noqa: BLE001 - én modell skal ikke stoppe resten
-            failed.append(name)
-            registry[name] = {"name": name, "repo": spec["repo"], "error": f"{type(exc).__name__}: {exc}"}
+            prev = registry.get(name) or {}
+            if prev.get("path") and Path(prev["path"], "model.bin").exists():
+                # Behold en modell som allerede er lastet ned (f.eks. ved nettfeil).
+                prev["last_error"] = f"{type(exc).__name__}: {exc}"
+                registry[name] = prev
+                print(f"[advarsel] {name}: {exc}; bruker tidligere nedlastet modell", file=sys.stderr)
+            else:
+                failed.append(name)
+                registry[name] = {"name": name, "repo": spec["repo"], "error": f"{type(exc).__name__}: {exc}"}
             print(f"[feil] {name}: {exc}", file=sys.stderr)
         registry_path.write_text(json.dumps(registry, ensure_ascii=False, indent=2), encoding="utf-8")
     return 1 if failed else 0
