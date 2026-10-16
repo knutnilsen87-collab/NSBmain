@@ -1,0 +1,19 @@
+{
+  "api": {
+    "export_scope": [
+      "model_lineage",
+      "dataset_provenance",
+      "deployment_history",
+      "evaluation_reports"
+    ],
+    "supported_formats": [
+      "json",
+      "csv",
+      "parquet"
+    ],
+    "authentication": "required",
+    "endpoint": "/api/v1/audit/export"
+  },
+  "timestamp": "2026-03-16T01:53:23.0061838Z",
+  "compliance_target": "EU_AI_ACT_AUDIT"
+}

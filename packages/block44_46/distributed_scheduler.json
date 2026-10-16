@@ -1,0 +1,6 @@
+{
+  "component":"distributed_scheduler",
+  "strategy":"least_loaded_worker",
+  "inputs":["request","worker_registry"],
+  "status":"scaffolded"
+}

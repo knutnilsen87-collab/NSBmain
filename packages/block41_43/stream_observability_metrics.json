@@ -1,0 +1,6 @@
+{
+  "component":"stream_observability_metrics",
+  "metrics":["real_time_factor","partial_stability","decode_latency"],
+  "export":"observability_pipeline",
+  "status":"scaffolded"
+}

@@ -1,0 +1,6 @@
+{
+  "component":"stream_session_lifecycle",
+  "states":["session_open","audio_streaming","partial_emit","final_emit","session_close"],
+  "timeout_policy":"session_idle_timeout",
+  "status":"implementation_started"
+}

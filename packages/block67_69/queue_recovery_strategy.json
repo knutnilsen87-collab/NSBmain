@@ -1,0 +1,6 @@
+{
+  "component":"queue_recovery_strategy",
+  "mechanism":"job_replay_from_queue",
+  "persistence":"durable_queue",
+  "status":"scaffolded"
+}

@@ -1,0 +1,6 @@
+{
+  "component":"norwegian_dialect_matrix",
+  "dialects":["bokmaal","nynorsk","tronder","nordnorsk","vestlandsk"],
+  "purpose":"balanced_training_and_evaluation",
+  "status":"scaffolded"
+}

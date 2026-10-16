@@ -1,0 +1,6 @@
+{
+  "component":"promotion_decision_engine",
+  "rules":["WER_improvement","latency_within_budget","rollback_guard_present"],
+  "action":"promote_or_reject_model",
+  "status":"scaffolded"
+}

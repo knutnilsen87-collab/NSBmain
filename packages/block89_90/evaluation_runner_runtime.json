@@ -1,0 +1,7 @@
+{
+  "component":"evaluation_runner_runtime",
+  "datasets":["baseline_eval","dialect_eval","domain_eval"],
+  "metrics":["WER","CER","latency"],
+  "execution_mode":"runtime_evaluation",
+  "status":"implementation_started"
+}

@@ -1,0 +1,6 @@
+{
+  "component":"dataset_audit_trail",
+  "records":["dataset_id","source","transformations","access_events"],
+  "storage":"audit_registry",
+  "status":"scaffolded"
+}

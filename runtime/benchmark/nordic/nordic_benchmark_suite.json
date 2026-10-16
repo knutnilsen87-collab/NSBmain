@@ -1,0 +1,19 @@
+{
+  "metrics": [
+    "WER",
+    "CER",
+    "NamedEntityAccuracy",
+    "NumericAccuracy",
+    "StreamingStability"
+  ],
+  "timestamp": "2026-03-15T21:41:07.4348711Z",
+  "languages": [
+    "norwegian",
+    "swedish",
+    "danish",
+    "finnish",
+    "icelandic"
+  ],
+  "publication_ready": true,
+  "benchmark_suite": "NordicSpeechBench"
+}

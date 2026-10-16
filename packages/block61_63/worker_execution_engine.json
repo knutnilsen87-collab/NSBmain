@@ -1,0 +1,6 @@
+{
+  "component":"worker_execution_engine",
+  "execution_model":"async_job_execution",
+  "retry_policy":"bounded_retry",
+  "status":"scaffolded"
+}

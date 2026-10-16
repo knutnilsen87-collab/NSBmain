@@ -1,0 +1,13 @@
+{
+  "certification": {
+    "audit_ready": true,
+    "security": "verified",
+    "resilience": "verified",
+    "certification_level": "National Speech Infrastructure",
+    "platform": "NorwegianSpeechBase",
+    "language_coverage": "verified",
+    "observability": "verified",
+    "governance": "verified"
+  },
+  "timestamp": "2026-03-15T15:43:10.4899457Z"
+}

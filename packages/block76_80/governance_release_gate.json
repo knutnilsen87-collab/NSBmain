@@ -1,0 +1,6 @@
+{
+  "component":"governance_release_gate",
+  "conditions":["all_quality_gates_pass","bundle_integrity_valid"],
+  "action":"allow_platform_release",
+  "status":"scaffolded"
+}

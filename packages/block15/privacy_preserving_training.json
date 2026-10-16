@@ -1,0 +1,5 @@
+{
+  "component":"privacy_preserving_training",
+  "techniques":["federated_learning","differential_privacy"],
+  "status":"scaffolded"
+}

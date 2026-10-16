@@ -1,0 +1,19 @@
+{
+  "timestamp": "2026-03-15T15:41:31.8620479Z",
+  "streaming_support": true,
+  "documentation": "generated",
+  "sdks": [
+    {
+      "language": "python",
+      "description": "Python SDK for NorwegianSpeechBase API"
+    },
+    {
+      "language": "javascript",
+      "description": "JavaScript SDK for NorwegianSpeechBase API"
+    },
+    {
+      "language": "go",
+      "description": "Go SDK for NorwegianSpeechBase API"
+    }
+  ]
+}

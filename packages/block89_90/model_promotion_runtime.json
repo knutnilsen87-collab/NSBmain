@@ -1,0 +1,6 @@
+{
+  "component":"model_promotion_runtime",
+  "conditions":["wer_improvement","latency_within_budget","rollback_guard_present"],
+  "decision":"promote_or_reject_model",
+  "status":"implementation_started"
+}

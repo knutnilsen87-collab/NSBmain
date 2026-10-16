@@ -1,0 +1,11 @@
+{
+  "system": "event_driven_speech_pipelines",
+  "timestamp": "2026-03-16T07:59:27.7768356Z",
+  "triggers": [
+    "audio_ingest",
+    "transcription_complete",
+    "analytics_event",
+    "translation_event"
+  ],
+  "orchestration": "event_stream_processing"
+}

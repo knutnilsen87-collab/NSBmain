@@ -1,0 +1,6 @@
+{
+  "component":"usage_metering_policy",
+  "tracked_metrics":["audio_seconds","gpu_seconds","stream_sessions"],
+  "aggregation_window":"daily",
+  "status":"scaffolded"
+}

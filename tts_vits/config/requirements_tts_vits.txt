@@ -1,0 +1,14 @@
+# Core
+numpy
+scipy
+soundfile
+pyyaml
+tqdm
+rich
+# Audio/Text
+phonemizer
+unidecode
+regex
+# Training
+torch
+torchaudio

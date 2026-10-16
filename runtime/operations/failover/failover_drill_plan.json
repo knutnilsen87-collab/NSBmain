@@ -1,0 +1,9 @@
+{
+  "failover_test": {
+    "verification": "pending",
+    "region_primary": "region_a",
+    "simulated_outage": true,
+    "region_secondary": "region_b"
+  },
+  "timestamp": "2026-03-15T15:34:01.0659808Z"
+}

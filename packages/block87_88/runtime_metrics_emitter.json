@@ -1,0 +1,6 @@
+{
+  "component":"runtime_metrics_emitter",
+  "metrics":["request_latency","gpu_utilization","decode_time","worker_queue_depth"],
+  "export_target":"observability_stack",
+  "status":"implementation_started"
+}

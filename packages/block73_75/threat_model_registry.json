@@ -1,0 +1,6 @@
+{
+  "component":"threat_model_registry",
+  "threats":["data_exfiltration","model_poisoning","api_abuse"],
+  "mitigations":["rate_limiting","dataset_validation","audit_logging"],
+  "status":"scaffolded"
+}

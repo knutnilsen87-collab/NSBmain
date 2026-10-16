@@ -1,0 +1,6 @@
+{
+  "component":"worker_scheduler_runtime",
+  "strategy":"least_loaded_worker",
+  "health_checks":["heartbeat","gpu_memory","queue_depth"],
+  "status":"implementation_started"
+}

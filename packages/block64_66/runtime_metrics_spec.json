@@ -1,0 +1,6 @@
+{
+  "component":"runtime_metrics_spec",
+  "metrics":["requests_per_second","gpu_utilization","queue_depth","latency_p95"],
+  "export":"observability_stack",
+  "status":"scaffolded"
+}

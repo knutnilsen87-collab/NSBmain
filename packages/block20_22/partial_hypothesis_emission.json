@@ -1,0 +1,6 @@
+{
+  "component":"partial_hypothesis_emission",
+  "mode":"incremental_transcript_updates",
+  "stability_signal":"included",
+  "status":"implemented_scaffold"
+}

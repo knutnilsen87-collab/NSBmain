@@ -1,0 +1,6 @@
+{
+  "component":"evaluation_harness",
+  "inputs":["candidate_model","evaluation_dataset"],
+  "outputs":["WER","CER","latency"],
+  "status":"scaffolded"
+}

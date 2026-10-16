@@ -1,0 +1,6 @@
+{
+  "component":"model_registry",
+  "tracks":["model_id","training_dataset","metrics","artifact_hash"],
+  "versioning":"semantic_model_version",
+  "status":"scaffolded"
+}

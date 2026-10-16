@@ -1,0 +1,5 @@
+{
+  "component":"tenant_directory_registry",
+  "fields":["tenant_id","organization","region","quota_profile"],
+  "status":"scaffolded"
+}

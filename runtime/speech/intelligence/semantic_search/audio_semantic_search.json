@@ -1,0 +1,10 @@
+{
+  "service": "audio_semantic_search",
+  "indexed_units": [
+    "utterance",
+    "segment",
+    "speaker_turn"
+  ],
+  "query_mode": "semantic_audio_retrieval",
+  "timestamp": "2026-03-16T07:43:58.8284476Z"
+}

@@ -1,0 +1,6 @@
+{
+  "component":"model_release_policy",
+  "conditions":["promotion_decision_pass","rollback_guard_present","evaluation_complete"],
+  "action":"allow_deploy",
+  "status":"scaffolded"
+}

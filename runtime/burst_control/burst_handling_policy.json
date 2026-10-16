@@ -1,0 +1,9 @@
+{
+  "burst_handling": {
+    "max_queue_depth": 10000,
+    "burst_scale_gpu_workers": 20,
+    "burst_strategy": "temporary_scale_out",
+    "cooldown_seconds": 120
+  },
+  "timestamp": "2026-03-15T15:34:42.3837513Z"
+}

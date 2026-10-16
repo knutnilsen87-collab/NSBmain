@@ -1,0 +1,7 @@
+{
+  "metric":"runtime_crash_rate",
+  "trigger":"increase_vs_baseline",
+  "threshold_percent":2,
+  "action":"rollback_to_last_known_good_model",
+  "status":"active_policy"
+}

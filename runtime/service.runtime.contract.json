@@ -1,0 +1,18 @@
+{
+  "service_name": "norwegianspeechbase",
+  "bind_host": "127.0.0.1",
+  "bind_port": 8080,
+  "model_name": "baseline_cpu_int8",
+  "language_default": "nb",
+  "max_request_seconds": 120,
+  "max_audio_mb": 100,
+  "health_requirements": {
+    "bundle_exists": true,
+    "score_report_exists": true,
+    "benchmark_claim_safe_required": true
+  },
+  "logging": {
+    "format": "ulf-1.0",
+    "jsonl": true
+  }
+}

@@ -1,0 +1,5 @@
+{
+  "cluster":"distributed_gpu_workers",
+  "scheduler":"round_robin",
+  "status":"scaffolded"
+}

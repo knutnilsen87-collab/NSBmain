@@ -1,0 +1,6 @@
+{
+  "component":"dataset_runner",
+  "datasets":["baseline_eval","dialect_eval","domain_eval"],
+  "execution_mode":"batch_evaluation",
+  "status":"scaffolded"
+}

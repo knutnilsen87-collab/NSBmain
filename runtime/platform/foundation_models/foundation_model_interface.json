@@ -1,0 +1,11 @@
+{
+  "interface": "foundation_model_runtime",
+  "supported_models": [
+    "asr",
+    "speech_embeddings",
+    "translation",
+    "speech_intelligence"
+  ],
+  "runtime_mode": "pluggable_models",
+  "timestamp": "2026-03-16T07:59:26.768032Z"
+}

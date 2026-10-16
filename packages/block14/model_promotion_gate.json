@@ -1,0 +1,5 @@
+{
+  "component":"model_promotion_gate",
+  "criteria":["WER_improvement","latency_ok","cost_ok"],
+  "status":"scaffolded"
+}

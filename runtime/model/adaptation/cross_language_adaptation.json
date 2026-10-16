@@ -1,0 +1,16 @@
+{
+  "cross_language_transfer": {
+    "target_languages": [
+      "finnish",
+      "icelandic"
+    ],
+    "source_languages": [
+      "norwegian",
+      "swedish",
+      "danish"
+    ],
+    "transfer_learning": "enabled",
+    "multilingual_embeddings": "enabled"
+  },
+  "timestamp": "2026-03-15T23:07:57.9424529Z"
+}

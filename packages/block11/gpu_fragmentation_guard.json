@@ -1,0 +1,5 @@
+{
+  "component":"gpu_fragmentation_guard",
+  "status":"scaffolded",
+  "watchdog":"cuda_memory_monitor"
+}

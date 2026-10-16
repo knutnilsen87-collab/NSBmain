@@ -1,0 +1,6 @@
+{
+  "component":"automatic_model_rollback_guard",
+  "triggers":["wer_regression","latency_spike","crash_rate_increase"],
+  "action":"rollback_to_last_known_good",
+  "status":"scaffolded"
+}

@@ -1,0 +1,6 @@
+{
+  "component":"runtime_quota_enforcement",
+  "limits":["requests_per_minute","max_streams","gpu_time_budget"],
+  "actions":["throttle","reject_request"],
+  "status":"implementation_started"
+}

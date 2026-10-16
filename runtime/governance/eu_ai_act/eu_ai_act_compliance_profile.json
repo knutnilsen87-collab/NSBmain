@@ -1,0 +1,12 @@
+{
+  "timestamp": "2026-03-15T23:16:07.6090319Z",
+  "ai_act_profile": {
+    "audit_logging": "enabled",
+    "human_oversight": "enabled",
+    "risk_category": "limited_risk",
+    "transparency_requirements": "enabled",
+    "explainability_artifacts": "required",
+    "dataset_lineage_required": true
+  },
+  "compliance_ready": true
+}

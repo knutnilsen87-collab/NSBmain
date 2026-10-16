@@ -1,0 +1,6 @@
+{
+  "component":"gpu_routing_policy",
+  "criteria":["gpu_memory_available","worker_health","queue_depth"],
+  "behavior":"route_to_optimal_worker",
+  "status":"scaffolded"
+}

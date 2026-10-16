@@ -1,0 +1,5 @@
+{
+  "component":"release_certification_checklist",
+  "checks":["security_audit","resilience_tests","dataset_governance","runtime_telemetry"],
+  "status":"scaffolded"
+}

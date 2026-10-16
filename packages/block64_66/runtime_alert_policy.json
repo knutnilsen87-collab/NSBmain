@@ -1,0 +1,6 @@
+{
+  "component":"runtime_alert_policy",
+  "alerts":["latency_spike","worker_failure","gpu_oom"],
+  "delivery":"alerting_system",
+  "status":"scaffolded"
+}

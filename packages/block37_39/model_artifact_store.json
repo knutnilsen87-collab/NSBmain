@@ -1,0 +1,6 @@
+{
+  "component":"model_artifact_store",
+  "storage":"artifact_repository",
+  "artifacts":["model_weights","training_config","evaluation_report"],
+  "status":"scaffolded"
+}

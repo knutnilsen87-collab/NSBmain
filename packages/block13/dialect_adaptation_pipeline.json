@@ -1,0 +1,6 @@
+{
+  "component":"dialect_adaptation_pipeline",
+  "input":"dialect_dataset",
+  "output":"adapted_model",
+  "status":"scaffolded"
+}

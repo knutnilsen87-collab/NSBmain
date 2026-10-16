@@ -1,0 +1,6 @@
+{
+  "component":"worker_health_checks",
+  "checks":["heartbeat","gpu_memory","queue_depth"],
+  "failure_action":"worker_drain",
+  "status":"scaffolded"
+}

@@ -1,0 +1,7 @@
+{
+  "component":"national_dataset_program",
+  "sources":["crowdsourced","institutional","broadcast","public_sector"],
+  "governance":"provenance_required",
+  "quality_gate":"dataset_quality_gate",
+  "status":"scaffolded"
+}

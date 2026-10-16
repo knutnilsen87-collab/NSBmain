@@ -1,0 +1,6 @@
+{
+  "component":"model_promotion_runtime",
+  "criteria":["WER_improvement","latency_budget","rollback_guard_present"],
+  "policy":"promotion_requires_all_checks",
+  "status":"scaffolded"
+}

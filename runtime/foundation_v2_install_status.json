@@ -1,0 +1,18 @@
+{
+  "installed_at": "2026-03-07T11:18:14",
+  "repo_root": "F:\\NorwegianSpeechBase",
+  "preflight_hook_state": "already_present",
+  "artifacts": [
+    ".\\registries\\datasets\\dataset_registry.json",
+    ".\\registries\\models\\model_registry.json",
+    ".\\registries\\voices\\voice_registry.json",
+    ".\\contracts\\API_V1_CONTRACT.md",
+    ".\\contracts\\EVAL_CONTRACT_V1.md",
+    ".\\contracts\\DATASET_REGISTRY_CONTRACT_V1.md",
+    ".\\contracts\\MODEL_REGISTRY_CONTRACT_V1.md",
+    ".\\contracts\\VOICE_REGISTRY_CONTRACT_V1.md",
+    ".\\docs\\LOGGING_TRUTH_CONTRACT.md",
+    ".\\docs\\FOUNDATION_BOOTSTRAP_STATUS.md",
+    ".\\docs\\FOUNDATION_BACKLOG_V2.md"
+  ]
+}

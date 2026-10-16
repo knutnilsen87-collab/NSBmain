@@ -1,0 +1,7 @@
+{
+  "component":"model_runtime_binding",
+  "runtime":"api_runtime",
+  "binding_mode":"active_model_resolution",
+  "inputs":["model_id","artifact_path","decoder_config"],
+  "status":"implementation_started"
+}

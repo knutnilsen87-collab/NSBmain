@@ -1,0 +1,7 @@
+{
+  "component":"dataset_provenance_ingest",
+  "required_fields":["dataset_id","source","license","collection_method"],
+  "transform_tracking":"enabled",
+  "gate":"reject_if_missing_provenance",
+  "status":"scaffolded"
+}

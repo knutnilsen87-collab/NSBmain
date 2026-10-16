@@ -1,0 +1,6 @@
+{
+  "component":"cluster_autoscaler",
+  "scale_up_triggers":["gpu_queue_depth","latency_spike"],
+  "scale_down_policy":"idle_worker_timeout",
+  "status":"scaffolded"
+}

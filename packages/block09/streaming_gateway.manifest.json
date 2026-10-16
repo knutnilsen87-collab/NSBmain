@@ -1,0 +1,7 @@
+{
+  "name": "streaming_asr_gateway",
+  "status": "scaffolded",
+  "transport": ["websocket","grpc"],
+  "ingestion": "chunked_audio",
+  "generated_by": "NSB.Autopilot.Block09.StreamingFoundation.ps1"
+}

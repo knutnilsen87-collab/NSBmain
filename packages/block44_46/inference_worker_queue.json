@@ -1,0 +1,6 @@
+{
+  "component":"inference_worker_queue",
+  "queue_type":"priority_queue",
+  "retry_policy":"exponential_backoff",
+  "status":"scaffolded"
+}

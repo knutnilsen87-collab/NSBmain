@@ -1,0 +1,5 @@
+{
+  "queue":"asr_jobs",
+  "policy":"priority_with_retry",
+  "dead_letter_queue":"enabled"
+}

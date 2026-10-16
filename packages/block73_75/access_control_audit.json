@@ -1,0 +1,5 @@
+{
+  "component":"access_control_audit",
+  "checks":["tenant_access_scope","admin_privileges","dataset_access_log"],
+  "status":"scaffolded"
+}

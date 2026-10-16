@@ -1,0 +1,13 @@
+{
+  "pii_handling": {
+    "training_dataset_scrubbing": "enabled",
+    "automatic_redaction": "enabled"
+  },
+  "timestamp": "2026-03-16T01:41:52.1012803Z",
+  "techniques": [
+    "federated_learning",
+    "secure_enclaves",
+    "differential_privacy"
+  ],
+  "compliance_profile": "EU_GDPR_AI_ACT_READY"
+}

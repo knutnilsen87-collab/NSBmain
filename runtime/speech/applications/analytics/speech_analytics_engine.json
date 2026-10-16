@@ -1,0 +1,10 @@
+{
+  "service": "speech_analytics_engine",
+  "timestamp": "2026-03-16T07:55:24.8894246Z",
+  "capabilities": [
+    "sentiment_detection",
+    "topic_detection",
+    "compliance_monitoring",
+    "conversation_quality_scoring"
+  ]
+}

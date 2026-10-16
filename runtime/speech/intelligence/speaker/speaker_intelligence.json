@@ -1,0 +1,7 @@
+{
+  "service": "speaker_intelligence",
+  "speaker_fingerprinting": "enabled",
+  "timestamp": "2026-03-16T07:43:58.7704043Z",
+  "speaker_search": "enabled",
+  "diarization": "enabled"
+}

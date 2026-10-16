@@ -1,0 +1,1 @@
+Manglende signatur for loggfil: F:\NorwegianSpeechBase\logs\setup_norwegian_speechbase_20251128_212808.log

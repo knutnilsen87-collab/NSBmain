@@ -1,0 +1,6 @@
+{
+  "component":"cross_tenant_access_rules",
+  "controls":["dataset_sharing","model_sharing","evaluation_collaboration"],
+  "authorization":"policy_engine",
+  "status":"scaffolded"
+}

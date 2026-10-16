@@ -1,0 +1,6 @@
+{
+  "component":"tenant_federation_policy",
+  "federation_modes":["isolated","trusted_group","public_exchange"],
+  "default_mode":"isolated",
+  "status":"scaffolded"
+}

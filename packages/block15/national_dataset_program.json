@@ -1,0 +1,6 @@
+{
+  "component":"national_dataset_program",
+  "sources":["crowdsourced_speech","institutional_speech","domain_speech"],
+  "governance":"provenance_required",
+  "status":"scaffolded"
+}

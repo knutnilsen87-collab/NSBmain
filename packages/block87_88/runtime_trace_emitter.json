@@ -1,0 +1,6 @@
+{
+  "component":"runtime_trace_emitter",
+  "trace_points":["api_entry","dispatch","worker_execute","decode_complete"],
+  "correlation_id":"request_id",
+  "status":"implementation_started"
+}

@@ -1,0 +1,5 @@
+{
+  "component":"inference_runtime_controller",
+  "controls":["request_dispatch","model_selection","resource_tracking"],
+  "status":"scaffolded"
+}

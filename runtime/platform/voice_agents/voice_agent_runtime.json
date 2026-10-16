@@ -1,0 +1,10 @@
+{
+  "capabilities": [
+    "speech_understanding",
+    "dialog_management",
+    "speech_response_generation"
+  ],
+  "integration": "speech_platform_native",
+  "runtime": "voice_agent_runtime",
+  "timestamp": "2026-03-16T07:59:27.5600378Z"
+}

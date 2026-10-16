@@ -1,0 +1,24 @@
+project:
+  name: norwegian_vits_mvp
+  root: F:/NorwegianSpeechBase/tts_vits
+data:
+  # You need paired (wav, text). Put dataset here later.
+  dataset_root: F:/NorwegianSpeechBase/tts_vits/data/dataset
+  # Expected structure example:
+  # dataset/wavs/*.wav
+  # dataset/metadata.csv  (format: wav_name|text)
+  metadata_csv: F:/NorwegianSpeechBase/tts_vits/data/dataset/metadata.csv
+audio:
+  sample_rate: 22050
+  n_mels: 80
+train:
+  epochs: 200
+  batch_size: 16
+  lr: 2.0e-4
+  num_workers: 2
+  seed: 1337
+speaker:
+  # Conditioning option: use your AudioEncoder embeddings later
+  use_audio_encoder_conditioning: true
+  audio_encoder_ckpt: F:/NorwegianSpeechBase/models/audio_encoder/checkpoints/checkpoint_last.pt
+  audio_encoder_proj_dim: 128

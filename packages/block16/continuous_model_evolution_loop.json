@@ -1,0 +1,6 @@
+{
+  "component":"continuous_model_evolution_loop",
+  "stages":["dataset_ingestion","training","evaluation","promotion","deploy","monitor"],
+  "safety":"guarded_by_rollback_policy",
+  "status":"scaffolded"
+}

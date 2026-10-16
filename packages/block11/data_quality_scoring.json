@@ -1,0 +1,5 @@
+{
+  "service":"data_quality_scoring",
+  "metrics":["snr","language_purity","transcription_agreement"],
+  "status":"scaffolded"
+}

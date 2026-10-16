@@ -1,0 +1,25 @@
+{
+  "priority_levels": [
+    {
+      "description": "Emergency and national infrastructure services",
+      "priority_weight": 100,
+      "tier": "critical"
+    },
+    {
+      "description": "Production enterprise tenants",
+      "priority_weight": 70,
+      "tier": "high"
+    },
+    {
+      "description": "General workloads",
+      "priority_weight": 40,
+      "tier": "standard"
+    },
+    {
+      "description": "Batch or non-critical workloads",
+      "priority_weight": 10,
+      "tier": "background"
+    }
+  ],
+  "timestamp": "2026-03-15T15:32:46.0101288Z"
+}

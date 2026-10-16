@@ -1,0 +1,7 @@
+{
+  "component":"model_registry_link",
+  "registry":"model_registry",
+  "resolution":"latest_certified_or_pinned",
+  "required_fields":["model_id","artifact_hash","release_status"],
+  "status":"implementation_started"
+}

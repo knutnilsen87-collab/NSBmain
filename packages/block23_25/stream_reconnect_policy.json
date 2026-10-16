@@ -1,0 +1,7 @@
+{
+  "component":"stream_reconnect_policy",
+  "reconnect":"allowed",
+  "resume_from_offset":"true",
+  "timeout_seconds":30,
+  "status":"scaffolded"
+}

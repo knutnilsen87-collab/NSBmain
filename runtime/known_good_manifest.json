@@ -1,0 +1,12 @@
+{
+  "updated_at_utc": "2026-03-07T14:43:27.0646826Z",
+  "canonical_speak": {
+    "entrypoint": ".\\nsb-speak.ps1",
+    "latest_run_dir": "F:\\NorwegianSpeechBase\\logs\\runs\\speak_20260307_145406",
+    "reference_file": ".\\reference\\known_good_speak_run.json",
+    "speech_status_file": ".\\logs\\LATEST\\SPEAK_LAST_STATUS.json",
+    "bundle_file": ".\\logs\\LATEST\\FBL_STATUS_BUNDLE.txt",
+    "speech_green": true,
+    "backend": "faster_whisper_cpu_int8"
+  }
+}

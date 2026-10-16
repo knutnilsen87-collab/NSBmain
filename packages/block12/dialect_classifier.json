@@ -1,0 +1,6 @@
+{
+  "component":"dialect_classifier",
+  "input":"speech_audio",
+  "output":"dialect_label",
+  "status":"scaffolded"
+}

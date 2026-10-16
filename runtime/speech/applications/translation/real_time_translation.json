@@ -1,0 +1,14 @@
+{
+  "service": "real_time_translation",
+  "timestamp": "2026-03-16T07:55:24.7611791Z",
+  "supported_languages": [
+    "norwegian",
+    "swedish",
+    "danish",
+    "finnish",
+    "icelandic",
+    "english",
+    "german"
+  ],
+  "mode": "streaming_translation"
+}

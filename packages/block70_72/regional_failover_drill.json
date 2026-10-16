@@ -1,0 +1,6 @@
+{
+  "component":"regional_failover_drill",
+  "trigger":"simulate_primary_region_outage",
+  "expected_outcome":"traffic_shift_to_secondary",
+  "status":"scaffolded"
+}

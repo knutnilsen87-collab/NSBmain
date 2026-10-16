@@ -1,0 +1,6 @@
+{
+  "component":"worker_registration",
+  "registry":"cluster_worker_registry",
+  "fields":["worker_id","gpu_id","capacity","status"],
+  "status":"scaffolded"
+}

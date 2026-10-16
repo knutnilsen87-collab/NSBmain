@@ -1,0 +1,6 @@
+{
+  "component":"chaos_test_scenarios",
+  "scenarios":["worker_crash","gpu_oom","queue_backpressure"],
+  "purpose":"validate_runtime_resilience",
+  "status":"scaffolded"
+}

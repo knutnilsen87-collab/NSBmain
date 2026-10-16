@@ -1,0 +1,6 @@
+{
+  "component":"runtime_trace_pipeline",
+  "trace_points":["api_entry","dispatch","worker_start","decode_complete"],
+  "purpose":"latency_root_cause_analysis",
+  "status":"scaffolded"
+}

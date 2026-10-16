@@ -1,0 +1,10 @@
+{
+  "risk_dashboard": {
+    "model_risk": "low",
+    "security_risk": "low",
+    "capacity_risk": "low",
+    "runtime_risk": "low",
+    "overall_status": "green"
+  },
+  "timestamp": "2026-03-15T15:35:23.2847819Z"
+}

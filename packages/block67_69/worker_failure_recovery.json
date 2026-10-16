@@ -1,0 +1,6 @@
+{
+  "component":"worker_failure_recovery",
+  "detection":"heartbeat_timeout",
+  "action":"remove_worker_and_reschedule_jobs",
+  "status":"scaffolded"
+}

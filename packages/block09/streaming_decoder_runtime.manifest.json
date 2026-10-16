@@ -1,0 +1,6 @@
+{
+  "name": "streaming_decoder_runtime",
+  "status": "scaffolded",
+  "features": ["partial_hypothesis_emission","low_latency_decode"],
+  "generated_by": "NSB.Autopilot.Block09.StreamingFoundation.ps1"
+}

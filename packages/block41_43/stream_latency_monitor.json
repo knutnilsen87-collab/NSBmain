@@ -1,0 +1,6 @@
+{
+  "component":"stream_latency_monitor",
+  "metrics":["p50_latency","p95_latency","p99_latency"],
+  "alert_threshold_ms":300,
+  "status":"scaffolded"
+}

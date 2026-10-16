@@ -1,0 +1,18 @@
+{
+  "api_channels": [
+    {
+      "description": "Backward compatible production API",
+      "channel": "stable"
+    },
+    {
+      "description": "Upcoming features with limited guarantees",
+      "channel": "preview"
+    },
+    {
+      "description": "Research features without stability guarantees",
+      "channel": "experimental"
+    }
+  ],
+  "timestamp": "2026-03-15T15:40:57.6518363Z",
+  "versioning_policy": "semantic_versioning"
+}

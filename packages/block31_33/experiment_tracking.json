@@ -1,0 +1,6 @@
+{
+  "component":"experiment_tracking",
+  "tracks":["runs","configs","metrics","artifacts"],
+  "backend":"registry_scaffold",
+  "status":"scaffolded"
+}

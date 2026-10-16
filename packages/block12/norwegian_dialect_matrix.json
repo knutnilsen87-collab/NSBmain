@@ -1,0 +1,6 @@
+{
+  "component":"norwegian_dialect_matrix",
+  "dialects":["ostlandsk","vestlandsk","nordnorsk","trondersk"],
+  "purpose":"benchmark_baseline",
+  "status":"scaffolded"
+}

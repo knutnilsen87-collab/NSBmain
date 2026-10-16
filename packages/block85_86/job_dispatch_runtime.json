@@ -1,0 +1,6 @@
+{
+  "component":"job_dispatch_runtime",
+  "flow":["job_receive","worker_assign","decode_execute","result_return"],
+  "retry_policy":"bounded_retry_with_backoff",
+  "status":"implementation_started"
+}

@@ -1,0 +1,6 @@
+{
+  "component":"gpu_fragmentation_watchdog",
+  "monitors":["cuda_memory_fragmentation","oom_events"],
+  "action":"worker_restart",
+  "status":"scaffolded"
+}

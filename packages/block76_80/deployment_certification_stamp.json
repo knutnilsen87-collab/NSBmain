@@ -1,0 +1,5 @@
+{
+  "component":"deployment_certification_stamp",
+  "fields":["bundle_hash","deployment_time","certified_by_autopilot"],
+  "status":"scaffolded"
+}

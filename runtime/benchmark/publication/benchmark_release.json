@@ -1,0 +1,14 @@
+{
+  "benchmark_release": {
+    "cer": 0.02,
+    "publication_ready": true,
+    "segment_scores": {
+      "named_entities": "PASS",
+      "numeric": "PASS",
+      "dialect": "PASS",
+      "streaming": "PASS"
+    },
+    "wer": 0.05
+  },
+  "timestamp": "2026-03-15T15:37:41.2289559Z"
+}

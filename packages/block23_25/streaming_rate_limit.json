@@ -1,0 +1,6 @@
+{
+  "component":"streaming_rate_limit",
+  "controls":["tenant_quota","stream_limit_per_tenant"],
+  "backpressure":"enabled",
+  "status":"scaffolded"
+}

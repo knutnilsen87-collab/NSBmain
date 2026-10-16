@@ -1,0 +1,6 @@
+{
+  "component":"capacity_planner",
+  "inputs":["historical_load","gpu_utilization","tenant_growth"],
+  "planning_window_days":7,
+  "status":"scaffolded"
+}

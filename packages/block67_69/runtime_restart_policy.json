@@ -1,0 +1,6 @@
+{
+  "component":"runtime_restart_policy",
+  "trigger":["memory_leak_detected","gpu_oom","unhandled_exception"],
+  "action":"controlled_runtime_restart",
+  "status":"scaffolded"
+}

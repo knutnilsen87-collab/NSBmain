@@ -1,0 +1,6 @@
+{
+  "component":"tenant_quota_policy",
+  "limits":["requests_per_minute","max_streams","gpu_time_budget"],
+  "enforcement":"throttle_or_reject",
+  "status":"scaffolded"
+}

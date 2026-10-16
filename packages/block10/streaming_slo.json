@@ -1,0 +1,5 @@
+{
+  "metric":"streaming_latency",
+  "targets":{"p50_ms":150,"p95_ms":300},
+  "generated_by":"Block10"
+}

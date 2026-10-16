@@ -1,0 +1,7 @@
+{
+  "service": "speech_embeddings",
+  "embedding_dimension": 1024,
+  "multilingual_support": "enabled",
+  "timestamp": "2026-03-16T07:43:58.7108891Z",
+  "similarity_search": "enabled"
+}

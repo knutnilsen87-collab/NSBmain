@@ -1,0 +1,7 @@
+{
+  "predicted_gpu_hours": 12000,
+  "timestamp": "2026-03-15T15:33:24.9992651Z",
+  "predicted_scale_requirement": "medium",
+  "forecast_window_days": 30,
+  "predicted_peak_load": "high"
+}

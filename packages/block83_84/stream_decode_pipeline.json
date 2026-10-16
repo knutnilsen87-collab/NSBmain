@@ -1,0 +1,6 @@
+{
+  "component":"stream_decode_pipeline",
+  "stages":["audio_chunk_ingest","feature_extract","model_decode","partial_hypothesis_emit","finalize_segment"],
+  "stream_mode":"low_latency_incremental_decode",
+  "status":"implementation_started"
+}

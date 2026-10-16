@@ -1,0 +1,7 @@
+{
+  "component":"regional_failover_policy",
+  "failover_mode":"automatic",
+  "regions":["primary","secondary"],
+  "trigger":"worker_cluster_unhealthy",
+  "status":"scaffolded"
+}

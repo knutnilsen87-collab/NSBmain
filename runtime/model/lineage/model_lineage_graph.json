@@ -1,0 +1,13 @@
+{
+  "timestamp": "2026-03-15T15:40:06.0706919Z",
+  "models": [
+    {
+      "deployed": true,
+      "training_config": "default_config",
+      "dataset": "dataset_example_001",
+      "model_id": "asr_model_v1",
+      "evaluation": "PASS"
+    }
+  ],
+  "lineage_graph": "dataset → training → evaluation → deploy"
+}

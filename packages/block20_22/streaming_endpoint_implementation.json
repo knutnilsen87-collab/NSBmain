@@ -1,0 +1,7 @@
+{
+  "component":"streaming_endpoint_implementation",
+  "transports":["websocket","grpc"],
+  "endpoint_status":"implemented_scaffold",
+  "request_model":"chunked_audio_session",
+  "response_model":"streaming_transcript"
+}

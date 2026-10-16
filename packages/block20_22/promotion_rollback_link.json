@@ -1,0 +1,7 @@
+{
+  "component":"promotion_rollback_link",
+  "promotion_gate":"model_promotion_gate",
+  "rollback_policies":["rollback_policy_wer","rollback_policy_latency","rollback_policy_crash_rate"],
+  "behavior":"promotion_requires_rollback_coverage",
+  "status":"implemented_scaffold"
+}

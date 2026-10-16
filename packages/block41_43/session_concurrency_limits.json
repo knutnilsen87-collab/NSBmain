@@ -1,0 +1,6 @@
+{
+  "component":"session_concurrency_limits",
+  "controls":["max_sessions_per_tenant","max_audio_rate"],
+  "protection":"throttle_and_queue",
+  "status":"scaffolded"
+}

@@ -1,0 +1,6 @@
+{
+  "component":"tenant_federation_layer",
+  "tenants":["enterprise","research","public_sector"],
+  "isolation":"policy_enforced",
+  "status":"scaffolded"
+}

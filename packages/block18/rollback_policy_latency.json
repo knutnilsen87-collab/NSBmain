@@ -1,0 +1,7 @@
+{
+  "metric":"streaming_latency",
+  "trigger":"p95_latency_increase",
+  "threshold_ms":300,
+  "action":"rollback_to_last_known_good_model",
+  "status":"active_policy"
+}

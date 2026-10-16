@@ -1,0 +1,11 @@
+{
+  "timestamp": "2026-03-16T01:51:56.2127314Z",
+  "compliance_profile": "EU_AI_ACT_TRANSPARENCY",
+  "explainability": {
+    "feature_attribution": "available",
+    "audit_exports": "supported",
+    "evaluation_reports": "generated",
+    "model_cards": "enabled",
+    "dataset_cards": "enabled"
+  }
+}

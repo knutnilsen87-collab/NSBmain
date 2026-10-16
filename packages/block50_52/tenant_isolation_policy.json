@@ -1,0 +1,6 @@
+{
+  "component":"tenant_isolation_policy",
+  "isolation_levels":["compute","data","queue"],
+  "enforcement":"runtime_policy_layer",
+  "status":"scaffolded"
+}

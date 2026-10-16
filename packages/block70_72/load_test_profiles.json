@@ -1,0 +1,6 @@
+{
+  "component":"load_test_profiles",
+  "profiles":["baseline","peak_load","burst_load"],
+  "metrics":["latency","throughput","error_rate"],
+  "status":"scaffolded"
+}

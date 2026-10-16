@@ -1,0 +1,11 @@
+{
+  "component":"dataset_quality_gate",
+  "metrics":["snr","language_purity","transcription_agreement"],
+  "minimum_thresholds":{
+      "snr":20,
+      "language_purity":0.9,
+      "transcription_agreement":0.92
+  },
+  "behavior":"reject_dataset_if_below_threshold",
+  "status":"scaffolded"
+}

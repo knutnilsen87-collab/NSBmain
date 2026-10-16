@@ -1,0 +1,5 @@
+{
+  "component":"benchmark_harness",
+  "metrics":["WER","CER","domain_accuracy"],
+  "status":"scaffolded"
+}

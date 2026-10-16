@@ -1,0 +1,6 @@
+{
+  "component":"dataset_license_policy",
+  "required_fields":["license_type","usage_scope","redistribution_allowed"],
+  "validation":"ingest_gate",
+  "status":"scaffolded"
+}

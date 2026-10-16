@@ -1,0 +1,6 @@
+{
+  "component":"benchmark_suite",
+  "metrics":["WER","CER","latency","real_time_factor"],
+  "evaluation_sets":["baseline_eval","dialect_eval","domain_eval"],
+  "status":"scaffolded"
+}

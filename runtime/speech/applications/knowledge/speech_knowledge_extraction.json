@@ -1,0 +1,10 @@
+{
+  "service": "speech_knowledge_extraction",
+  "outputs": [
+    "meeting_minutes",
+    "structured_entities",
+    "action_items",
+    "knowledge_graph_nodes"
+  ],
+  "timestamp": "2026-03-16T07:55:24.9499282Z"
+}

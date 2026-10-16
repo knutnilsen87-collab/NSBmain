@@ -1,0 +1,13 @@
+{
+  "supported_languages": [
+    "norwegian",
+    "swedish",
+    "danish",
+    "finnish",
+    "icelandic"
+  ],
+  "runtime_controller": "multilingual_enabled",
+  "timestamp": "2026-03-15T22:51:17.8501861Z",
+  "routing_mode": "auto_language_runtime_dispatch",
+  "language_detection": "enabled"
+}

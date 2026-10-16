@@ -1,0 +1,16 @@
+{
+  "timestamp": "2026-03-16T01:37:46.1191598Z",
+  "residency_policy": {
+    "enforcement": "runtime_enforced",
+    "storage_compliance": "EEA_only",
+    "allowed_regions": [
+      "EEA",
+      "EU"
+    ],
+    "prohibited_regions": [
+      "non_EU_unapproved"
+    ],
+    "dataset_location_validation": "enabled"
+  },
+  "compliance_standard": "EU_Data_Sovereignty"
+}

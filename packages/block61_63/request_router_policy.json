@@ -1,0 +1,6 @@
+{
+  "component":"request_router_policy",
+  "routing_strategy":"latency_and_capacity",
+  "inputs":["tenant_priority","worker_load"],
+  "status":"scaffolded"
+}

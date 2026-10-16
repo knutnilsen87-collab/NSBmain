@@ -1,0 +1,23 @@
+{
+  "tiers": [
+    {
+      "priority": "highest",
+      "availability": "99.99%",
+      "latency_ms": 1500,
+      "name": "SLA-1-Critical"
+    },
+    {
+      "priority": "high",
+      "availability": "99.9%",
+      "latency_ms": 3000,
+      "name": "SLA-2-Production"
+    },
+    {
+      "priority": "normal",
+      "availability": "99%",
+      "latency_ms": 8000,
+      "name": "SLA-3-BestEffort"
+    }
+  ],
+  "timestamp": "2026-03-15T15:32:09.7616786Z"
+}

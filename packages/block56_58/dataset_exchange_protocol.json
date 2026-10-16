@@ -1,0 +1,6 @@
+{
+  "component":"dataset_exchange_protocol",
+  "exchange_modes":["federated_share","evaluation_only","restricted_training"],
+  "authorization":"policy_engine",
+  "status":"scaffolded"
+}

@@ -1,0 +1,6 @@
+{
+  "component":"streaming_session_state",
+  "fields":["session_id","tenant_id","audio_offset","last_partial"],
+  "lifecycle":["open","active","closed","timeout"],
+  "status":"scaffolded"
+}

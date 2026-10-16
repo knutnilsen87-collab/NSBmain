@@ -1,0 +1,19 @@
+{
+  "deployment_profile": {
+    "security_level": "high_assurance",
+    "audit_logging": "mandatory",
+    "compliance": [
+      "EU_AI_ACT",
+      "GDPR",
+      "NIS2_ready"
+    ],
+    "air_gapped_mode": "supported",
+    "target": "government",
+    "encryption": {
+      "data_at_rest": "AES256",
+      "data_in_transit": "TLS1.3"
+    },
+    "sovereign_cloud": "supported"
+  },
+  "timestamp": "2026-03-16T01:54:31.6257853Z"
+}

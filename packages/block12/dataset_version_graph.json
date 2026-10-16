@@ -1,0 +1,5 @@
+{
+  "component":"dataset_version_graph",
+  "tracks":["dataset_v1","dataset_v2","lineage_edges"],
+  "status":"scaffolded"
+}
