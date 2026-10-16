@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  nsb-eval:
+    name: Målestokk og treningsverktøy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e ".[dev]" ruff==0.15.20
+      - run: ruff check nsb_eval tests scripts/build_testsets.py scripts/download_models.py src/python/nsb_train_utils.py src/python/split_by_group.py
+      - run: python -m pytest
+
+  pilot-asr-api:
+    name: Pilot-API
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/pilot-asr-api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -r requirements.dev.txt
+      - run: python -m ruff check app tests
+      - run: python -m unittest discover -s tests -v

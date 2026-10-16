@@ -1,0 +1,182 @@
+#Requires -Version 7
+<#
+.SYNOPSIS
+  Kjører NSB-målestokken: alle modeller mot alle faste testsett.
+
+.DESCRIPTION
+  1. Lager .venv-bench med faster-whisper og CUDA-bibliotekene fra pip.
+  2. Laster ned modellene (scripts/download_models.py).
+  3. Lager stillhetssettet (nsb_eval.silence).
+  4. Sjekker at GPU-en virker; faller tilbake til CPU int8 hvis ikke.
+  5. Kjører nsb_eval.runner per modell og testsett (kan avbrytes og startes igjen).
+  6. Skriver eval/results/BENCHMARK.md og BENCHMARK.json.
+
+  Fremdrift: eval/results/RUN.log og eval/results/RUN_STATUS.json.
+
+.EXAMPLE
+  pwsh -File scripts\run_benchmark.ps1
+  pwsh -File scripts\run_benchmark.ps1 -Models nb-whisper-small -Testsets npsc_test_20170207 -Limit 20
+#>
+param(
+    [string]$Root = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path,
+    [string[]]$Models = @('nb-whisper-small', 'nb-whisper-medium', 'nb-whisper-large', 'nb-whisper-large-distil-turbo-beta', 'whisper-large-v3'),
+    [string[]]$Testsets = @('silence_v1', 'npsc_test_20170207', 'npsc_eval_20170209', 'nb_samtale_test'),
+    [string]$PythonLauncher = 'py',
+    [string]$PythonVersion = '3.11',
+    [string]$Device = 'cuda',
+    [string]$ComputeType = 'float16',
+    [int]$Limit = 0,
+    [switch]$SkipSetup,
+    # For testing: bruk en eksisterende Python og en ferdig models.json (hopper over nedlasting).
+    [string]$PythonExe = '',
+    [string]$ModelsJson = ''
+)
+
+$ErrorActionPreference = 'Continue'
+Set-Location $Root
+$Results = Join-Path $Root 'eval/results'
+New-Item -ItemType Directory -Force -Path $Results | Out-Null
+$Log = Join-Path $Results 'RUN.log'
+$StatusPath = Join-Path $Results 'RUN_STATUS.json'
+
+function Write-Log([string]$Message) {
+    $line = '[{0}] {1}' -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ss'), $Message
+    Write-Host $line
+    Add-Content -Path $Log -Value $line -Encoding utf8
+}
+
+$status = [ordered]@{
+    started      = (Get-Date).ToString('o')
+    root         = $Root
+    device       = $Device
+    compute_type = $ComputeType
+    phase        = 'setup'
+    jobs         = [ordered]@{}
+    finished     = $null
+    error        = $null
+}
+function Save-Status { $status | ConvertTo-Json -Depth 8 | Set-Content -Path $StatusPath -Encoding utf8 }
+function Stop-WithError([string]$Message) {
+    Write-Log "FEIL: $Message"
+    $status.phase = 'failed'
+    $status.error = $Message
+    $status.finished = (Get-Date).ToString('o')
+    Save-Status
+    exit 1
+}
+Save-Status
+Write-Log "Start i $Root (modeller: $($Models -join ', '); testsett: $($Testsets -join ', '))"
+
+# ---------- 1. Miljø
+$Venv = Join-Path $Root '.venv-bench'
+$Py = if ($PythonExe) { $PythonExe } else { Join-Path $Venv 'Scripts/python.exe' }
+if (-not $SkipSetup) {
+    if (-not (Test-Path $Py)) {
+        Write-Log "Lager $Venv med Python $PythonVersion"
+        & $PythonLauncher "-$PythonVersion" -m venv $Venv
+        if ($LASTEXITCODE -ne 0 -or -not (Test-Path $Py)) { Stop-WithError "Kunne ikke lage venv med '$PythonLauncher -$PythonVersion'" }
+    }
+    Write-Log 'Installerer faster-whisper og CUDA-biblioteker (kan ta noen minutter)'
+    & $Py -m pip install --upgrade pip *>> $Log
+    & $Py -m pip install 'faster-whisper==1.2.1' 'av>=11,<16' 'huggingface_hub>=0.23,<1.0' 'nvidia-cublas-cu12' 'nvidia-cudnn-cu12==9.*' *>> $Log
+    if ($LASTEXITCODE -ne 0) { Stop-WithError 'pip install feilet; se RUN.log' }
+}
+$site = (& $Py -c "import sysconfig; print(sysconfig.get_paths()['purelib'])").Trim()
+$sep = [System.IO.Path]::PathSeparator
+foreach ($sub in @('nvidia/cublas/bin', 'nvidia/cudnn/bin', 'nvidia/cuda_nvrtc/bin', 'nvidia/cuda_runtime/bin')) {
+    $p = Join-Path $site $sub
+    if (Test-Path $p) { $env:PATH = "$p$sep$env:PATH" }
+}
+$env:PYTHONPATH = "$Root$sep$(Join-Path $Root 'src/python')"
+$env:PYTHONIOENCODING = 'utf-8'
+$env:PYTHONUTF8 = '1'
+$env:HF_HUB_DISABLE_SYMLINKS_WARNING = '1'
+$versions = (& $Py -c "import faster_whisper, ctranslate2; print(faster_whisper.__version__, ctranslate2.__version__, ctranslate2.get_cuda_device_count())").Trim()
+Write-Log "faster-whisper, ctranslate2, CUDA-enheter: $versions"
+$status.versions = $versions
+
+# ---------- 2. Modeller
+$status.phase = 'download'; Save-Status
+$onlyArgs = @(); foreach ($m in $Models) { $onlyArgs += @('--only', $m) }
+if ($ModelsJson) {
+    $registryPath = $ModelsJson
+    Write-Log "Bruker ferdig modelliste $ModelsJson"
+} else {
+    Write-Log 'Laster ned modeller'
+    & $Py scripts/download_models.py --out models/benchmark @onlyArgs *>> $Log
+    $registryPath = Join-Path $Root 'models/benchmark/models.json'
+}
+if (-not (Test-Path $registryPath)) { Stop-WithError 'models.json mangler etter nedlasting' }
+$registry = Get-Content $registryPath -Raw | ConvertFrom-Json
+
+# ---------- 3. Stillhetssett
+& $Py -m nsb_eval.silence --out-dir eval/testsets/silence_v1 *>> $Log
+if ($LASTEXITCODE -ne 0) { Stop-WithError 'Kunne ikke lage stillhetssettet' }
+
+function Get-TestsetArgs([string]$Name) {
+    if ($Name -eq 'silence_v1') {
+        return @('--manifest', 'eval/testsets/silence_v1/manifest.jsonl', '--audio-root', 'eval/testsets/silence_v1')
+    }
+    return @('--manifest', "eval/testsets/$Name.jsonl", '--audio-root', $Root, '--group-by', 'dialect', '--group-by', 'standard')
+}
+
+# ---------- 4. GPU-sjekk
+$firstModel = $Models | Where-Object { $registry.$_.path } | Select-Object -First 1
+if (-not $firstModel) { Stop-WithError 'Ingen modeller ble lastet ned' }
+if ($Device -eq 'cuda') {
+    $probe = Join-Path $Results '_gpu_probe'
+    if (Test-Path $probe) { Remove-Item -Recurse -Force $probe }
+    & $Py -m nsb_eval.runner @(Get-TestsetArgs 'npsc_test_20170207') --limit 3 --testset gpu_probe --backend faster-whisper `
+        --model $registry.$firstModel.path --label $firstModel --device cuda --compute-type $ComputeType --out-dir $probe *>> $Log
+    if ($LASTEXITCODE -ne 0) {
+        Write-Log 'GPU virker ikke (se RUN.log). Bytter til CPU int8; det tar vesentlig lengre tid.'
+        $Device = 'cpu'; $ComputeType = 'int8'
+        $status.device = $Device; $status.compute_type = $ComputeType
+    } else {
+        Write-Log 'GPU virker'
+    }
+    if (Test-Path $probe) { Remove-Item -Recurse -Force $probe }
+}
+
+# ---------- 5. Målinger
+$status.phase = 'evaluate'; Save-Status
+foreach ($m in $Models) {
+    $entry = $registry.$m
+    if (-not $entry.path) {
+        $status.jobs["$m"] = [ordered]@{ state = 'skipped'; reason = "$($entry.error)" }
+        Write-Log "Hopper over ${m}: $($entry.error)"
+        Save-Status
+        continue
+    }
+    foreach ($ts in $Testsets) {
+        $key = "$ts/$m"
+        $out = Join-Path (Join-Path $Results $ts) $m
+        New-Item -ItemType Directory -Force -Path $out | Out-Null
+        $status.jobs[$key] = [ordered]@{ state = 'running'; started = (Get-Date).ToString('o') }
+        Save-Status
+        Write-Log "Kjører $key på $Device/$ComputeType"
+        $limitArgs = @(); if ($Limit -gt 0) { $limitArgs = @('--limit', "$Limit") }
+        & $Py -m nsb_eval.runner @(Get-TestsetArgs $ts) --testset $ts --backend faster-whisper --model $entry.path --label $m `
+            --device $Device --compute-type $ComputeType --out-dir $out @limitArgs *>> (Join-Path $out 'run.log')
+        $code = $LASTEXITCODE
+        $summaryPath = Join-Path $out 'summary.json'
+        $job = [ordered]@{ state = $(if ($code -eq 0) { 'done' } else { 'failed' }); exit_code = $code; finished = (Get-Date).ToString('o') }
+        if (Test-Path $summaryPath) {
+            $s = Get-Content $summaryPath -Raw | ConvertFrom-Json
+            $job.wer = $s.speech.wer
+            $job.items_failed = $s.items_failed
+            if ($s.silence) { $job.silence_hallucination_rate = $s.silence.hallucination_on_silence_rate }
+        }
+        $status.jobs[$key] = $job
+        Save-Status
+        Write-Log ("Ferdig {0}: exit {1}, WER {2}" -f $key, $code, $job.wer)
+    }
+}
+
+# ---------- 6. Rapport
+$status.phase = 'report'; Save-Status
+& $Py -m nsb_eval.report --results eval/results --out eval/results/BENCHMARK.md *>> $Log
+$status.phase = 'done'
+$status.finished = (Get-Date).ToString('o')
+Save-Status
+Write-Log 'Ferdig. Se eval/results/BENCHMARK.md'

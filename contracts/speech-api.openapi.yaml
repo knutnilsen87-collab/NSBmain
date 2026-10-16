@@ -1,0 +1,58 @@
+openapi: 3.1.0
+info:
+  title: NorwegianSpeechBase API
+  version: 1.0.0
+  description: Stable Norwegian ASR infrastructure contract.
+servers:
+  - url: http://127.0.0.1:8080
+paths:
+  /health/live:
+    get:
+      summary: Liveness probe
+      responses:
+        '200':
+          description: Process alive
+  /health/ready:
+    get:
+      summary: Readiness probe
+      responses:
+        '200':
+          description: Ready for traffic
+        '503':
+          description: Not ready
+  /v1/transcriptions:
+    post:
+      summary: Transcribe WAV audio
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [audio_path]
+              properties:
+                audio_path:
+                  type: string
+                language:
+                  type: string
+                  default: nb
+                request_id:
+                  type: string
+      responses:
+        '200':
+          description: Successful transcription
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [request_id, hypothesis, model, latency_ms, status]
+                properties:
+                  request_id: { type: string }
+                  hypothesis: { type: string }
+                  model: { type: string }
+                  latency_ms: { type: integer }
+                  status: { type: string }
+        '400':
+          description: Invalid request
+        '503':
+          description: Service unavailable

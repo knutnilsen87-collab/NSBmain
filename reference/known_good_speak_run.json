@@ -1,0 +1,11 @@
+{
+  "locked_at_utc": "2026-03-07T14:05:08.3052140Z",
+  "run_dir": "F:\\NorwegianSpeechBase\\logs\\runs\\speak_20260307_145406",
+  "run_name": "speak_20260307_145406",
+  "speech_green": true,
+  "wav_exists": true,
+  "transcribe_ok": true,
+  "hyp_present": true,
+  "blocked_reason": "none",
+  "source_status_file": "F:\\NorwegianSpeechBase\\logs\\LATEST\\SPEAK_LAST_STATUS.json"
+}

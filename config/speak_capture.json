@@ -1,0 +1,8 @@
+{
+  "device_index": 1,
+  "samplerate": 44100,
+  "channels": 2,
+  "selected_at": "2026-03-06T23:04:29",
+  "source": "LOCKED_CANONICAL_SUPPORTED_HOST",
+  "notes": "Locked to handoff-defined supported host: Windows10 + Yeti X + device_index=1 + 44100 + 2ch"
+}

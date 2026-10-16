@@ -1,0 +1,10 @@
+.venv-pilot-asr-py311/
+.venv-pilot-asr*/
+__pycache__/
+*.pyc
+.ruff_cache/
+.tmp-test/
+runtime-logs/
+tests/
+.env
+smoke_test.wav

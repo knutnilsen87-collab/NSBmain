@@ -1,0 +1,13 @@
+{
+  "preferred_device_name": "Mikrofon (Yeti X)",
+  "candidate_indices": [
+    1
+  ],
+  "selected_index": 1,
+  "selected_at": "2026-03-06T23:04:29",
+  "fallback_match_contains": [
+    "Mikrofon (Yeti X)",
+    "Yeti X"
+  ],
+  "notes": "Locked to canonical supported host per end-product contract"
+}

@@ -1,0 +1,21 @@
+{
+  "manifest_id": "locked_holdout_v1",
+  "version": "1.9",
+  "purpose": "holdout",
+  "trainable": false,
+  "benchmark_ready": true,
+  "entries": {
+    "entry_id": "holdout_candidate_001",
+    "type": "benchmark_candidate",
+    "source_path": "data/holdout_candidates/holdout_candidate_001.wav",
+    "transcript_path": "data/holdout_candidates/holdout_candidate_001.txt",
+    "provenance": "local_operator_supplied",
+    "license": "internal_operator_controlled",
+    "language": "no",
+    "manual_transcript_present": true,
+    "approved_for_holdout": true,
+    "ready_for_benchmarking": true,
+    "promoted_at_utc": "2026-03-09T07:45:33.2756146Z",
+    "notes": "Promoted after exact manual transcript."
+  }
+}

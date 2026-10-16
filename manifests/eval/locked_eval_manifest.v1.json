@@ -1,0 +1,15 @@
+{
+  "manifest_id": "locked_eval_v1",
+  "version": "1.0",
+  "purpose": "evaluation",
+  "trainable": false,
+  "entries": [
+    {
+      "entry_id": "known_good_speak_reference",
+      "type": "run_reference",
+      "run_dir": "F:\\NorwegianSpeechBase\\logs\\runs\\speak_20260307_145406",
+      "status_file": "F:\\NorwegianSpeechBase\\logs\\LATEST\\SPEAK_LAST_STATUS.json",
+      "notes": "Locked baseline evaluation reference. Not training data."
+    }
+  ]
+}

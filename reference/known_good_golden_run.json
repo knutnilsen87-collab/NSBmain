@@ -1,0 +1,10 @@
+{
+  "timestamp": "2026-03-06T23:31:00",
+  "canonical_workflows": [
+    ".\\nsb.ps1 smoke",
+    ".\\nsb.ps1 run",
+    ".\\nsb.ps1 full",
+    ".\\nsb.ps1 status"
+  ],
+  "note": "Golden path vurderes som operasjonelt stabil nok basert på handoff + nyere grønne runs. Speak-path er eksplisitt låst til known-good reference run."
+}
