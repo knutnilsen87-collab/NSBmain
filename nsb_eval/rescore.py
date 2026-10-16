@@ -54,6 +54,14 @@ def rescore_dir(run_dir: Path, models: dict | None = None) -> dict:
         "rescored_utc": dt.datetime.now(dt.timezone.utc).isoformat(),
         **summarize(rows, group_by=group_by),
     }
+    # Radene skrives også på nytt, slik at normalisert tekst, feiltall og flagg
+    # per setning stemmer med summary.json. Rå fasit og modellsvar beholdes.
+    items_path = run_dir / "items.jsonl"
+    tmp = items_path.with_suffix(".jsonl.tmp")
+    with open(tmp, "w", encoding="utf-8") as f:
+        for row in rows:
+            f.write(json.dumps(row, ensure_ascii=False) + "\n")
+    tmp.replace(items_path)
     (run_dir / "summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
     return summary
 

@@ -95,6 +95,14 @@ def test_normalize(raw, expected):
         ("klokka tolv tretti", "klokka 12.30"),
         ("klokka seksten seksten", "klokka 16.16"),
         ("klokka ti tretti", "klokka 10.30"),
+        # Gammel tellemåte etter hundre og tusen (funnet i NPSC-målingen 2026-10-16)
+        ("innstilling hundre og enogsytti l", "innstilling 171 L"),
+        ("tre hundre og femogførti kroner", "345 kroner"),
+        ("to tusen og femogtjue", "2025"),
+        ("to tusen og fem og tjue", "2025"),
+        ("hundre og en og tjue", "121"),
+        ("tusen og en natt", "1001 natt"),
+        ("hundre og fem og to", "105 og 2"),
     ],
 )
 def test_number_words_and_digits_compare_equal(words, digits):

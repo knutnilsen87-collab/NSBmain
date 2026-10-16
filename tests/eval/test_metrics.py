@@ -71,6 +71,9 @@ def test_edit_counts_add():
         (["takk", "takk", "takk", "takk"], True),
         (["takk", "for", "det", "takk", "for", "det", "takk", "for", "det", "takk", "for", "det"], True),
         (["takk", "takk", "takk"], False),
+        # Lang frase gjentatt (NB-Whisper medium på NPSC, 2026-10-16)
+        ("undersøkelsene syner at risikoanalyse for et flertall av disse ikke".split() * 4, True),
+        ("vegdirektoratet har heller ikke god nok informasjon for å følge opp at".split() * 3, False),
         (["en", "to", "tre", "fire", "fem", "seks"], False),
         ([], False),
     ],

@@ -19,7 +19,7 @@ Samme innstillinger for alle modeller: faster-whisper 1.2.1, språk `no` (nynors
 
 ## Normalisering
 
-Lik for fasit og svar (`nsb_eval/normalize.py`, versjon 2): små bokstaver, annotasjoner fjernet (`<ee>`, `%eee`, `%unint`), NB Samtales `sagt\skriftlig` erstattet med skriftlig form, avbrutte ord (`£`) fjernet, fyllord fjernet, tegnsetting og aksenter (unntatt æøå) fjernet.
+Lik for fasit og svar (`nsb_eval/normalize.py`, versjon 3): små bokstaver, annotasjoner fjernet (`<ee>`, `%eee`, `%unint`), NB Samtales `sagt\skriftlig` erstattet med skriftlig form, avbrutte ord (`£`) fjernet, fyllord fjernet, tegnsetting og aksenter (unntatt æøå) fjernet.
 
 Tall gjøres om til sifre på begge sider, slik at skrivemåte ikke teller som feil:
 
@@ -28,6 +28,7 @@ Tall gjøres om til sifre på begge sider, slik at skrivemåte ikke teller som f
 | `totusenogseksten`, `to tusen og seksten` | `2016` | `2016` |
 | `nittenåttiåtte` | `1988` | `1988` |
 | `femogtjue`, `tjuefem` | `25` | `25` |
+| `hundre og enogsytti`, `to tusen og femogtjue` | `171`, `2025` | `171`, `2025` |
 | `tjueen null null` | `21.00` | `21 0 0` |
 | `paragraf to hundre og syttien` | `§ 271` | `paragraf 271` |
 | `tre komma fem prosent` | `3,5 %` | `3 komma 5 prosent` |
@@ -36,13 +37,13 @@ Ordenstall (`13. februar`) blir ord (`trettende februar`). Ord som bare ligner t
 
 Ikke normalisert, og dermed talt som feil: bokmål mot nynorsk, radikale mot konservative bokmålsformer, sammensatte ord skrevet i to ord.
 
-Endres normaliseringen, scores lagrede resultater på nytt uten å kjøre modellene: `python -m nsb_eval.rescore --results eval/results --models-json models/benchmark/models.json`.
+Endres normaliseringen, scores lagrede resultater på nytt uten å kjøre modellene (både `summary.json` og radene i `items.jsonl` skrives på nytt): `python -m nsb_eval.rescore --results eval/results --models-json models/benchmark/models.json`.
 
 ## Mål
 
 - **WER**: (erstatninger + utelatelser + innsettinger) / antall ord i fasiten, summert over hele settet.
 - **CER**: samme på tegnnivå.
-- **Hallusinasjon**: andel setninger der modellen gjentar en frase minst fire ganger på rad, eller skriver mer enn dobbelt så mange ord som fasiten pluss fem.
+- **Hallusinasjon**: andel setninger der modellen gjentar en frase (1–12 ord) minst fire ganger på rad, eller skriver mer enn dobbelt så mange ord som fasiten pluss fem.
 - **Hallusinasjon i stillhet**: andel stillhetsklipp der modellen skriver noe som helst.
 - **Sanntidsfaktor**: behandlingstid / lydlengde.
 - Setninger der fasiten bare består av fyllord eller «uforståelig» holdes utenfor WER og rapporteres som antall.

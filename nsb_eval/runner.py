@@ -36,7 +36,7 @@ from .normalize import normalize
 __all__ = ["evaluate", "main", "summarize"]
 
 SCHEMA = "nsb-eval-2"
-NORMALIZER = "nsb_eval.normalize v2 (tall som sifre)"
+NORMALIZER = "nsb_eval.normalize v3 (tall som sifre, gammel tellemåte etter hundre/tusen)"
 # Felt som må være like for å kunne fortsette en kjøring i samme mappe.
 IDENTITY_KEYS = (
     "backend", "model", "label", "model_revision", "device", "compute_type", "language",

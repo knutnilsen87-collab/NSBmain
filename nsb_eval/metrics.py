@@ -91,7 +91,7 @@ def char_counts(reference: str, hypothesis: str) -> EditCounts:
     return align_counts(list(reference), list(hypothesis))
 
 
-def repetition_loop(words: list, min_repeats: int = 4, max_ngram: int = 4) -> bool:
+def repetition_loop(words: list, min_repeats: int = 4, max_ngram: int = 12) -> bool:
     """Sant hvis samme n-gram (n = 1..max_ngram) gjentas minst min_repeats
     ganger etter hverandre. Typisk tegn på at modellen har låst seg."""
     total = len(words)

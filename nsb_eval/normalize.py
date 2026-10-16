@@ -234,16 +234,18 @@ def _evaluate(parts: list[tuple[str, int]]) -> list[str]:
     have = False
     last = None
     used_mult = False
+    unit_after_mult = False  # siste ener ble lagt til rett etter hundre/tusen
     pending_og = False
 
     def flush():
-        nonlocal total, cur, have, last, used_mult
+        nonlocal total, cur, have, last, used_mult, unit_after_mult
         if have:
             out.append(str(total + cur))
         total = cur = 0
         have = False
         last = None
         used_mult = False
+        unit_after_mult = False
 
     for kind, value in parts:
         if kind == "og":
@@ -269,17 +271,22 @@ def _evaluate(parts: list[tuple[str, int]]) -> list[str]:
             continue
         # unit, teen eller tens
         combine = False
+        was_after_mult = False
         if have:
             small = cur % 100
             if last == "tens" and kind == "unit" and value < 10 and value > 0 and small % 10 == 0 and not pending_og:
                 cur += value  # tjue + en
                 combine = True
-            elif last == "unit" and kind == "tens" and pending_og and 0 < cur < 10 and not used_mult:
-                cur += value  # fem og tjue
+            elif (
+                last == "unit" and kind == "tens" and pending_og and 0 < small < 10
+                and (not used_mult or unit_after_mult)
+            ):
+                cur += value  # fem og tjue; hundre og enogsytti; to tusen og femogtjue
                 combine = True
             elif last == "mult" and small == 0 and cur % 1000 < 1000:
                 cur += value  # hundre (og) fem, tusen (og) tjue
                 combine = True
+                was_after_mult = kind == "unit"
             elif (
                 not pending_og and not used_mult and total == 0 and 10 <= cur <= 99
                 and kind in ("teen", "tens")
@@ -295,6 +302,7 @@ def _evaluate(parts: list[tuple[str, int]]) -> list[str]:
             if pending_og:
                 out.append("og")
             cur, have = value, True
+        unit_after_mult = was_after_mult
         last = kind
         pending_og = False
     flush()

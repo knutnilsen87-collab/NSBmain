@@ -159,7 +159,12 @@ def test_rescore_recomputes_from_raw_text(speech_set, tmp_path):
     s = json.loads((out / "summary.json").read_text(encoding="utf-8"))
     assert s["speech"]["wer"] == pytest.approx(2 / 11, abs=1e-6)
     assert "rescored_utc" in s and "by_dialect" in s
-    assert "v2" in s["normalizer"]
+    assert "v3" in s["normalizer"]
+    # Radene skrives på nytt, slik at de stemmer med summary.json
+    fresh = [json.loads(line) for line in items.read_text(encoding="utf-8").splitlines()]
+    assert len(fresh) == len(rows)
+    assert all(r.get("reference_norm") != "noe helt annet" for r in fresh)
+    assert sum(r["words"]["errors"] for r in fresh if "words" in r) == 2
 
 
 def test_groups_without_metadata_are_named_ukjent(tmp_path):
