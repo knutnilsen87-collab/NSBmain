@@ -2,7 +2,7 @@
 
 Norsk talegjenkjenning med etterprøvbar kvalitet: en fast, åpen målestokk for norske talemodeller, et pilot-API for transkribering og verktøy for å trene og tilpasse NB-Whisper.
 
-Status oktober 2026: fase 0 (opprydding) og fase 1 (målestokk) i [planen](https://claude.ai/code/artifact/0b3c098e-dbbd-4ebb-84b7-dad0a2f19f11). Første måling er kjørt 2026-10-16: fem modeller på fire faste testsett. Se [analysen](eval/results/ANALYSIS.md) og [tabellene](eval/results/BENCHMARK.md). NB-Whisper large distil-turbo er standardmodell for diktering; ordrett transkribering og nynorsk er de største svakhetene.
+Status oktober 2026: fase 0 (opprydding) er ferdig. Fase 1 (målestokk) er delvis ferdig; se [status krav for krav](docs/PHASE1_STATUS.md). Første måling er kjørt 2026-10-16: fem modeller på fire faste testsett, se [analysen](eval/results/ANALYSIS.md) og [tabellene](eval/results/BENCHMARK.md). NB-Whisper large distil-turbo er kandidat for diktering, men er ikke målt på juridisk diktat ennå. Godkjenningskravene står i [ACCEPTANCE_CRITERIA.md](docs/ACCEPTANCE_CRITERIA.md) (forslag).
 
 ## Innhold
 

@@ -26,8 +26,8 @@
   "git_sha": "5fb95d573dbabd02d3e92f1e1bcd12768db91358",
   "python": "3.11.9",
   "platform": "Windows-10-10.0.26200-SP0",
-  "normalizer": "nsb_eval.normalize v3 (tall som sifre, gammel tellemåte etter hundre/tusen)",
-  "rescored_utc": "2026-10-16T12:22:02.476815+00:00",
+  "normalizer": "nsb_eval.normalize v4 (lesbar + ordrett profil, meningsbærende feil)",
+  "rescored_utc": "2026-10-16T16:51:26.416124+00:00",
   "items_total": 501,
   "items_failed": 0,
   "complete": true,
@@ -51,6 +51,33 @@
     "repetition_loop_items": 0,
     "overlong_items": 0,
     "empty_output_items": 0,
+    "verbatim_wer": 0.157082,
+    "verbatim_deletion_rate": 0.065944,
+    "verbatim_word_counts": {
+      "substitutions": 756,
+      "deletions": 602,
+      "insertions": 76,
+      "reference_length": 9129,
+      "errors": 1434
+    },
+    "critical": {
+      "negation": {
+        "reference": 112,
+        "missed": 8,
+        "added": 5,
+        "missed_rate": 0.071429
+      },
+      "number": {
+        "reference": 53,
+        "missed": 2,
+        "missed_rate": 0.037736
+      },
+      "name": {
+        "reference": 203,
+        "missed": 102,
+        "missed_rate": 0.502463
+      }
+    },
     "audio_seconds": 3891.19,
     "processing_seconds": 392.04,
     "real_time_factor": 0.1008
@@ -75,6 +102,33 @@
       "repetition_loop_items": 0,
       "overlong_items": 0,
       "empty_output_items": 0,
+      "verbatim_wer": 0.136087,
+      "verbatim_deletion_rate": 0.068955,
+      "verbatim_word_counts": {
+        "substitutions": 207,
+        "deletions": 227,
+        "insertions": 14,
+        "reference_length": 3292,
+        "errors": 448
+      },
+      "critical": {
+        "negation": {
+          "reference": 33,
+          "missed": 1,
+          "added": 0,
+          "missed_rate": 0.030303
+        },
+        "number": {
+          "reference": 15,
+          "missed": 1,
+          "missed_rate": 0.066667
+        },
+        "name": {
+          "reference": 144,
+          "missed": 71,
+          "missed_rate": 0.493056
+        }
+      },
       "audio_seconds": 1425.67,
       "processing_seconds": 145.12,
       "real_time_factor": 0.1018
@@ -98,6 +152,33 @@
       "repetition_loop_items": 0,
       "overlong_items": 0,
       "empty_output_items": 0,
+      "verbatim_wer": 0.150715,
+      "verbatim_deletion_rate": 0.074058,
+      "verbatim_word_counts": {
+        "substitutions": 156,
+        "deletions": 171,
+        "insertions": 21,
+        "reference_length": 2309,
+        "errors": 348
+      },
+      "critical": {
+        "negation": {
+          "reference": 38,
+          "missed": 3,
+          "added": 3,
+          "missed_rate": 0.078947
+        },
+        "number": {
+          "reference": 11,
+          "missed": 1,
+          "missed_rate": 0.090909
+        },
+        "name": {
+          "reference": 8,
+          "missed": 3,
+          "missed_rate": 0.375
+        }
+      },
       "audio_seconds": 932.0,
       "processing_seconds": 87.26,
       "real_time_factor": 0.0936
@@ -121,6 +202,33 @@
       "repetition_loop_items": 0,
       "overlong_items": 0,
       "empty_output_items": 0,
+      "verbatim_wer": 0.180839,
+      "verbatim_deletion_rate": 0.057823,
+      "verbatim_word_counts": {
+        "substitutions": 393,
+        "deletions": 204,
+        "insertions": 41,
+        "reference_length": 3528,
+        "errors": 638
+      },
+      "critical": {
+        "negation": {
+          "reference": 41,
+          "missed": 4,
+          "added": 2,
+          "missed_rate": 0.097561
+        },
+        "number": {
+          "reference": 27,
+          "missed": 0,
+          "missed_rate": 0.0
+        },
+        "name": {
+          "reference": 51,
+          "missed": 28,
+          "missed_rate": 0.54902
+        }
+      },
       "audio_seconds": 1533.51,
       "processing_seconds": 159.66,
       "real_time_factor": 0.1041
@@ -146,6 +254,33 @@
       "repetition_loop_items": 0,
       "overlong_items": 0,
       "empty_output_items": 0,
+      "verbatim_wer": 0.143478,
+      "verbatim_deletion_rate": 0.065164,
+      "verbatim_word_counts": {
+        "substitutions": 592,
+        "deletions": 555,
+        "insertions": 75,
+        "reference_length": 8517,
+        "errors": 1222
+      },
+      "critical": {
+        "negation": {
+          "reference": 100,
+          "missed": 6,
+          "added": 4,
+          "missed_rate": 0.06
+        },
+        "number": {
+          "reference": 40,
+          "missed": 2,
+          "missed_rate": 0.05
+        },
+        "name": {
+          "reference": 202,
+          "missed": 102,
+          "missed_rate": 0.50495
+        }
+      },
       "audio_seconds": 3585.92,
       "processing_seconds": 359.79,
       "real_time_factor": 0.1003
@@ -169,6 +304,33 @@
       "repetition_loop_items": 0,
       "overlong_items": 0,
       "empty_output_items": 0,
+      "verbatim_wer": 0.346405,
+      "verbatim_deletion_rate": 0.076797,
+      "verbatim_word_counts": {
+        "substitutions": 164,
+        "deletions": 47,
+        "insertions": 1,
+        "reference_length": 612,
+        "errors": 212
+      },
+      "critical": {
+        "negation": {
+          "reference": 12,
+          "missed": 2,
+          "added": 1,
+          "missed_rate": 0.166667
+        },
+        "number": {
+          "reference": 13,
+          "missed": 0,
+          "missed_rate": 0.0
+        },
+        "name": {
+          "reference": 1,
+          "missed": 0,
+          "missed_rate": 0.0
+        }
+      },
       "audio_seconds": 305.27,
       "processing_seconds": 32.25,
       "real_time_factor": 0.1057

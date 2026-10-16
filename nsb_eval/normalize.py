@@ -27,7 +27,7 @@ from __future__ import annotations
 import re
 import unicodedata
 
-__all__ = ["FILLERS", "normalize", "number_to_words", "ordinal_to_words"]
+__all__ = ["FILLERS", "PROFILES", "normalize", "number_to_words", "ordinal_to_words"]
 
 # Annotasjoner i fasitene. Fjernes helt.
 _ANNOTATION_RE = re.compile(
@@ -146,6 +146,14 @@ _CLOCK_RE = re.compile(r"(?<![\d.])\b([01]?\d|2[0-3])[.:]([0-5]\d)\b(?![.:]\d)")
 _THOUSANDS_RE = re.compile(r"\b(\d{1,3})(?:[ . ](\d{3}))+\b")
 _PERCENT_RE = re.compile(r"(\d)\s*%")
 _PARAGRAPH_RE = re.compile(r"§+")
+# Vanlige forkortelser i offentlig tale. Utvides på begge sider, slik at
+# «1 mrd kr» og «en milliard kroner» blir like. Bare entydige forkortelser.
+_ABBREVIATIONS = {
+    "mrd": "milliarder", "mill": "millioner", "mio": "millioner", "pst": "prosent",
+    "kr": "kroner", "nr": "nummer", "jf": "jamfør", "jfr": "jamfør", "mv": "med videre",
+    "prop": "proposisjon", "innst": "innstilling", "km": "kilometer", "kg": "kilo",
+}
+_ABBREV_RE = re.compile(r"\b(" + "|".join(sorted(_ABBREVIATIONS, key=len, reverse=True)) + r")\b\.?")
 _LEADING_ZERO_RE = re.compile(r"\b0\d+\b")
 _PUNCT_RE = re.compile(r"[^\w\s]", flags=re.UNICODE)
 _SPACE_RE = re.compile(r"\s+")
@@ -357,20 +365,49 @@ def _strip_accents(text: str) -> str:
     return unicodedata.normalize("NFC", "".join(out))
 
 
-def normalize(text: str | None) -> str:
-    """Normaliserer en transkripsjon for WER/CER-beregning."""
+PROFILES = ("lesbar", "ordrett")
+
+# Annotasjoner som betyr at taleren nølte (fyllord). I ordrett profil blir de
+# til «eh», slik at et fyllord modellen skriver kan telles som riktig.
+# NPSC: <ee>, <mm>. NB Samtale: %eee, %emm, %mmm. Latter (%heh) og smatting (%ttt) er ikke ord.
+_FILLER_ANNOTATION_RE = re.compile(r"<(?:e+|eh|ehm|m+|hm+)>|%(?:e+|eh|ehm|em+|m+|hm+)\b", flags=re.IGNORECASE)
+_FILLER_TOKEN = "eh"
+
+
+def normalize(text: str | None, profile: str = "lesbar") -> str:
+    """Normaliserer en transkripsjon for WER/CER-beregning.
+
+    ``lesbar`` (standard): fyllord og avbrutte ord fjernes. Måler om teksten
+    gir riktig innhold.
+
+    ``ordrett``: fyllord (også annoterte, som ``<ee>`` og ``%eee``) blir til
+    «eh», og avbrutte ord («ble£») beholdes uten merket. Måler om alt som ble
+    sagt, står i teksten, slik ordrett gjengivelse i retten krever. Ellers lik
+    ``lesbar``.
+    """
+    if profile not in PROFILES:
+        raise ValueError(f"Ukjent profil {profile!r}; bruk en av {PROFILES}")
     if not text:
         return ""
+    verbatim = profile == "ordrett"
     t = unicodedata.normalize("NFC", text)
     t = _DOUBLE_NOTATION_RE.sub(r"\2", t)
-    t = _TRUNCATED_RE.sub(" ", t)
+    if verbatim:
+        t = t.replace("£", " ")
+        t = _FILLER_ANNOTATION_RE.sub(f" {_FILLER_TOKEN} ", t)
+    else:
+        t = _TRUNCATED_RE.sub(" ", t)
     t = _ANNOTATION_RE.sub(" ", t)
     # Ordenstall før små bokstaver: «13. februar», men ikke «kom 3. Så».
     t = _ORDINAL_RE.sub(lambda m: ordinal_to_words(int(m.group(1))), t)
     t = t.lower()
+    t = _ABBREV_RE.sub(lambda m: " " + _ABBREVIATIONS[m.group(1)] + " ", t)
     t = _expand_digits(t)
     t = t.replace("-", " ").replace("_", " ")
     t = _PUNCT_RE.sub(" ", t)
     t = _strip_accents(t)
-    words = [w for w in _SPACE_RE.split(t) if w and w not in FILLERS]
+    if verbatim:
+        words = [_FILLER_TOKEN if w in FILLERS else w for w in _SPACE_RE.split(t) if w]
+    else:
+        words = [w for w in _SPACE_RE.split(t) if w and w not in FILLERS]
     return " ".join(_words_to_digits(words))

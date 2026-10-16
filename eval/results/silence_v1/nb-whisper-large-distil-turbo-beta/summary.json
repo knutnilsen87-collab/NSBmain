@@ -26,8 +26,8 @@
   "git_sha": "5fb95d573dbabd02d3e92f1e1bcd12768db91358",
   "python": "3.11.9",
   "platform": "Windows-10-10.0.26200-SP0",
-  "normalizer": "nsb_eval.normalize v3 (tall som sifre, gammel tellemåte etter hundre/tusen)",
-  "rescored_utc": "2026-10-16T12:22:02.492245+00:00",
+  "normalizer": "nsb_eval.normalize v4 (lesbar + ordrett profil, meningsbærende feil)",
+  "rescored_utc": "2026-10-16T16:51:26.441674+00:00",
   "items_total": 12,
   "items_failed": 0,
   "complete": true,
@@ -51,6 +51,16 @@
     "repetition_loop_items": 0,
     "overlong_items": 0,
     "empty_output_items": 0,
+    "verbatim_wer": null,
+    "verbatim_deletion_rate": null,
+    "verbatim_word_counts": {
+      "substitutions": 0,
+      "deletions": 0,
+      "insertions": 0,
+      "reference_length": 0,
+      "errors": 0
+    },
+    "critical": null,
     "audio_seconds": 0,
     "processing_seconds": 0,
     "real_time_factor": null

@@ -7,7 +7,7 @@ Målet er at hvem som helst kan kjøre samme måling og få samme tall. Alt som 
 | Testsett | Setninger | Hva det måler | Sjekksum (sha256) |
 | --- | ---: | --- | --- |
 | `npsc_test_20170207` | 501 | Formell tale, Stortinget, NPSCs offisielle testsplitt | `491eab00…c4e444` |
-| `npsc_eval_20170209` | 582 | Samme type, beholdt for sammenligning med målinger fra januar 2026 | `62e68e6a…5411a0` |
+| `npsc_eval_20170209` | 582 | Samme type. Valideringssett fra godkjenningskravene versjon 1; brukes til valg av innstillinger, ikke til godkjenning | `62e68e6a…5411a0` |
 | `nb_samtale_test` | 1 195 | Samtale, fem dialektområder, bokmål og nynorsk, mye overlapp | `ac4da957…0ac7` |
 | `silence_v1` | 12 | Stillhet og støy uten tale; alt modellen skriver er oppdiktet | lages deterministisk av `nsb_eval.silence` |
 
@@ -19,7 +19,11 @@ Samme innstillinger for alle modeller: faster-whisper 1.2.1, språk `no` (nynors
 
 ## Normalisering
 
-Lik for fasit og svar (`nsb_eval/normalize.py`, versjon 3): små bokstaver, annotasjoner fjernet (`<ee>`, `%eee`, `%unint`), NB Samtales `sagt\skriftlig` erstattet med skriftlig form, avbrutte ord (`£`) fjernet, fyllord fjernet, tegnsetting og aksenter (unntatt æøå) fjernet.
+Lik for fasit og svar (`nsb_eval/normalize.py`, versjon 4, profil «lesbar»): små bokstaver, annotasjoner fjernet (`<ee>`, `%eee`, `%unint`), NB Samtales `sagt\skriftlig` erstattet med skriftlig form, avbrutte ord (`£`) fjernet, fyllord fjernet, tegnsetting og aksenter (unntatt æøå) fjernet.
+
+Profil «ordrett» er lik, men beholder det som ble sagt uten å bære innhold: fyllord (også annotert som `<ee>`, `%eee`, `%emm`) blir «eh», og avbrutte ord beholdes uten `£`. Latter (`%heh`) og smatting (`%ttt`) regnes ikke som ord. Ordrett profil måler om alt som ble sagt står i teksten, slik ordrett gjengivelse krever.
+
+Forkortelser utvides på begge sider: «mrd.» = milliarder, «pst.» = prosent, «kr» = kroner, «jf.» = jamfør, «Innst.» = innstilling, «Prop.» = proposisjon, med flere (`_ABBREVIATIONS` i koden).
 
 Tall gjøres om til sifre på begge sider, slik at skrivemåte ikke teller som feil:
 
@@ -44,6 +48,11 @@ Endres normaliseringen, scores lagrede resultater på nytt uten å kjøre modell
 - **WER**: (erstatninger + utelatelser + innsettinger) / antall ord i fasiten, summert over hele settet.
 - **CER**: samme på tegnnivå.
 - **Hallusinasjon**: andel setninger der modellen gjentar en frase (1–12 ord) minst fire ganger på rad, eller skriver mer enn dobbelt så mange ord som fasiten pluss fem.
+- **Ordrett WER**: WER med profil «ordrett».
+- **Meningsbærende feil** (`nsb_eval.critical`): tapte og tilføyde nektelser (ikke, ingen, aldri, nei ...; ikke frasen «ikke sant»), feil tall (unntatt 1, som oftest er artikkel) og feil navn (ord med stor forbokstav i fasiten utenom setningsstart; grovt mål). Telles mot fasiten etter justering.
+- **Minne**: høyeste RAM for prosessen og høyeste brukte GPU-minne på kortet under kjøringen (`nsb_eval.resources`; GPU-tallet inkluderer andre programmer på samme kort).
+
+Hallusinasjon inne i tale (tekst uten støtte i lyden mens noen snakker) måles ikke av disse målene. Tidskoder fra modellen bekrefter heller ikke at ordene ble sagt.
 - **Hallusinasjon i stillhet**: andel stillhetsklipp der modellen skriver noe som helst.
 - **Sanntidsfaktor**: behandlingstid / lydlengde.
 - Setninger der fasiten bare består av fyllord eller «uforståelig» holdes utenfor WER og rapporteres som antall.

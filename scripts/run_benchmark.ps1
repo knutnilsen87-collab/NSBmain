@@ -25,6 +25,12 @@ param(
     [string]$Device = 'cuda',
     [string]$ComputeType = 'float16',
     [int]$Limit = 0,
+    # Egen undermappe i eval/results for ekstra kjøringer (for eksempel 'cpu').
+    [string]$OutPrefix = '',
+    # Legges til testsettnavnet i resultatet (for eksempel '_maalform').
+    [string]$TestsetSuffix = '',
+    # Dekod hver setning med målformen i manifestet (bm -> no, nn -> nn).
+    [switch]$LanguageFromMeta,
     [switch]$SkipSetup,
     # For testing: bruk en eksisterende Python og en ferdig models.json (hopper over nedlasting).
     [string]$PythonExe = '',
@@ -32,14 +38,18 @@ param(
 )
 
 $ErrorActionPreference = 'Continue'
+# Fra .cmd (-File) kommer lister som én streng med komma: del dem opp.
+$Models = @($Models | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
+$Testsets = @($Testsets | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
 # Windows PowerShell 5.1 skriver ellers omdirigering (*>>) som UTF-16.
 $PSDefaultParameterValues['Out-File:Encoding'] = 'utf8'
 Set-Location $Root
 if ($Device -eq 'cpu' -and $ComputeType -eq 'float16') { $ComputeType = 'int8' }  # float16 virker ikke på CPU
 $Results = Join-Path $Root 'eval/results'
-New-Item -ItemType Directory -Force -Path $Results | Out-Null
-$Log = Join-Path $Results 'RUN.log'
-$StatusPath = Join-Path $Results 'RUN_STATUS.json'
+$JobRoot = if ($OutPrefix) { Join-Path $Results $OutPrefix } else { $Results }
+New-Item -ItemType Directory -Force -Path $JobRoot | Out-Null
+$Log = Join-Path $JobRoot 'RUN.log'
+$StatusPath = Join-Path $JobRoot 'RUN_STATUS.json'
 
 function Write-Log([string]$Message) {
     $line = '[{0}] {1}' -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ss'), $Message
@@ -80,7 +90,7 @@ if (-not $SkipSetup) {
     }
     Write-Log 'Installerer faster-whisper og CUDA-biblioteker (kan ta noen minutter)'
     & $Py -m pip install --upgrade pip *>> $Log
-    & $Py -m pip install 'faster-whisper==1.2.1' 'av>=11,<16' 'huggingface_hub[hf_xet]>=0.23,<1.0' 'nvidia-cublas-cu12' 'nvidia-cudnn-cu12==9.*' *>> $Log
+    & $Py -m pip install 'faster-whisper==1.2.1' 'av>=11,<16' 'huggingface_hub[hf_xet]>=0.23,<1.0' 'nvidia-cublas-cu12' 'nvidia-cudnn-cu12==9.*' 'psutil' *>> $Log
     if ($LASTEXITCODE -ne 0) { Stop-WithError 'pip install feilet; se RUN.log' }
 }
 if (-not (Test-Path $Py) -and -not (Get-Command $Py -ErrorAction SilentlyContinue)) { Stop-WithError "Fant ikke Python i $Py. Kjør uten -SkipSetup første gang." }
@@ -167,8 +177,9 @@ foreach ($m in $Models) {
         continue
     }
     foreach ($ts in $Testsets) {
-        $key = "$ts/$m"
-        $out = Join-Path (Join-Path $Results $ts) $m
+        $tsLabel = "$ts$TestsetSuffix"
+        $key = "$tsLabel/$m"
+        $out = Join-Path (Join-Path $JobRoot $tsLabel) $m
         New-Item -ItemType Directory -Force -Path $out | Out-Null
         $status.jobs[$key] = [ordered]@{ state = 'running'; started = (Get-Date).ToString('o') }
         Save-Status
@@ -176,7 +187,8 @@ foreach ($m in $Models) {
         $limitArgs = @(); if ($Limit -gt 0) { $limitArgs = @('--limit', "$Limit") }
         if ($entry.revision) { $limitArgs += @('--model-revision', "$($entry.revision)") }
         if ($entry.model_sha256) { $limitArgs += @('--model-sha256', "$($entry.model_sha256)") }
-        & $Py -m nsb_eval.runner @(Get-TestsetArgs $ts) --testset $ts --backend faster-whisper --model $entry.path --label $m `
+        if ($LanguageFromMeta) { $limitArgs += @('--language-from-meta', 'standard') }
+        & $Py -m nsb_eval.runner @(Get-TestsetArgs $ts) --testset $tsLabel --backend faster-whisper --model $entry.path --label $m `
             --device $Device --compute-type $ComputeType --out-dir $out @limitArgs *>> (Join-Path $out 'run.log')
         $code = $LASTEXITCODE
         if ($code -ne 0) { $failedJobs++ }

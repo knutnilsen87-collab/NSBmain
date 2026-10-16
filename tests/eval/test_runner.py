@@ -159,7 +159,7 @@ def test_rescore_recomputes_from_raw_text(speech_set, tmp_path):
     s = json.loads((out / "summary.json").read_text(encoding="utf-8"))
     assert s["speech"]["wer"] == pytest.approx(2 / 11, abs=1e-6)
     assert "rescored_utc" in s and "by_dialect" in s
-    assert "v3" in s["normalizer"]
+    assert "v4" in s["normalizer"]
     # Radene skrives på nytt, slik at de stemmer med summary.json
     fresh = [json.loads(line) for line in items.read_text(encoding="utf-8").splitlines()]
     assert len(fresh) == len(rows)

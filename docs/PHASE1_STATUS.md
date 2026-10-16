@@ -1,0 +1,37 @@
+# Fase 1: status krav for krav
+
+Oppdatert 2026-10-16. Fase 1 er **ikke lukket**. Modellsammenligningen på åpne testsett er gjort og etterprøvbar, men flere krav venter på opptak eller en kjøring på GPU-maskinen.
+
+Statusverdier: **verifisert** (gjort og kontrollert, med bevis), **venter på kjøring** (klart, men må kjøres på RTX 4080-maskinen), **blokkert** (krever opptak eller en beslutning), **utsatt** (flyttet til senere fase, med begrunnelse), **endret** (kravet er tatt ut eller erstattet).
+
+| Krav i planen | Status | Bevis eller hva som mangler |
+| --- | --- | --- |
+| Faste testsett: NPSC | Verifisert | `npsc_test_20170207` (501), `npsc_eval_20170209` (582), låst med sha256 i `tests/eval/test_testsets.py` |
+| Faste testsett: NB Samtale | Verifisert | `nb_samtale_test` (1 195), låst med sha256 |
+| Faste testsett: LIA, utvalg per landsdel | Endret | Tatt ut. Lisensen (CLARIN ACA-NC-LOC-PRIV-ND) tillater ikke kommersiell bruk eller avledede verk. Dialekt måles på NB Samtale (fem områder) |
+| Juridisk diktat, 1–2 timer med ordrett fasit | Blokkert | 50 setninger og innspillingsverktøy klart (`eval/recording/legal_dictation_v1`). Mangler opptak fra minst tre talere |
+| Simulerte rettsmøter og avhør | Blokkert | Tre fiktive avhør med to roller, innspillingsverktøy og fasitkontroll klart (`eval/recording/simulated_interview_v1`). Mangler opptak med to personer |
+| Evalueringskjører: WER og CER | Verifisert | `nsb_eval.metrics`, testet mot kjente tilfeller |
+| Fast norsk normalisering | Verifisert | v4: tall, gammel tellemåte, forkortelser. To feil funnet og rettet etter første måling; alt scoret på nytt |
+| Egen profil for ordrett tekst | Verifisert | `normalize(..., "ordrett")` beholder fyllord og avbrutte ord. Rapportert som «Ordrett WER» |
+| Meningsbærende feil (nektelser, tall, navn) | Verifisert, med forbehold | `nsb_eval.critical`. Navn er et grovt mål (stor forbokstav). Tall på NPSC eval er ikke pålitelige på grunn av forkortede årstall |
+| Hallusinasjon: tekst uten støtte i lyden | Delvis | Stillhet (12 klipp), gjentakelsesløkker og overlange svar måles. Hallusinasjon inne i tale måles ikke; krever merkede opptak og er flyttet til fase 3 |
+| Utelatelser | Verifisert | Lesbar og ordrett profil |
+| Sanntidsfaktor på GPU | Verifisert | Alle 20 kjøringer |
+| Minnebruk | Venter på kjøring | `nsb_eval.resources` måler høyeste RAM og GPU-minne fra nå av. Ikke målt i første kjøring |
+| Fem modeller på RTX 4080 | Verifisert | 20 kjøringer, 0 feilede setninger, modellrevisjon og sha256 registrert |
+| Samme modeller på CPU | Venter på kjøring | `scripts/RUN_PHASE1_CLOSEOUT.cmd` steg 3: fire modeller, int8, 100 setninger |
+| Nynorsk dekodet som nynorsk | Venter på kjøring | `RUN_PHASE1_CLOSEOUT.cmd` steg 1 (`--language-from-meta standard`) |
+| Rettelser i treningskoden | Verifisert | Røyktester med liten modell og ekte Whisper-tokenizer: 33 bestått 2026-10-16. Egen CI-jobb (`train-smoke`) kjører dem ved hver endring og feiler hvis de hoppes over |
+| Åpen publisering av resultater | Delvis | Kode, testsett og resultater i det offentlige repoet. Resultatsiden er publisert, men privat til eier deler den |
+| Modell for fase 2 (diktering) | Foreløpig | Kandidat: NB-Whisper distil-turbo. Endelig valg etter måling på juridisk diktat mot [godkjenningskravene](ACCEPTANCE_CRITERIA.md) |
+| Modell for fase 3 (ordrett) | Blokkert | Ingen modell oppfyller behovet. Krever avhørsopptak og undersøkelse av ordrette NB-Whisper-varianter |
+| Godkjenningskrav fastsatt før nye forsøk | Blokkert | Forslag i [ACCEPTANCE_CRITERIA.md](ACCEPTANCE_CRITERIA.md), venter på godkjenning fra prosjekteier |
+| Skille mellom trening, validering og låst test | Verifisert | Regel i [ACCEPTANCE_CRITERIA.md](ACCEPTANCE_CRITERIA.md); `split_by_group.py` utelukker testsettene |
+
+## Hva som lukker fase 1
+
+1. Kjør `scripts\RUN_PHASE1_CLOSEOUT.cmd` på RTX 4080-maskinen (omtrent 1,5 time). Lukker CPU, minne og nynorsk.
+2. Spill inn juridisk diktat med minst tre talere, og ett sett simulerte avhør med to personer. Kontroller fasitene.
+3. Godkjenn eller endre tallene i godkjenningskravene.
+4. Mål kandidaten på juridisk diktat og avhør. Først da kan modellvalget for fase 2 bekreftes.

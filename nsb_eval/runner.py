@@ -29,14 +29,16 @@ from collections import defaultdict
 from pathlib import Path
 
 from .backends import make_backend
+from .critical import add_counts, critical_counts, rates
 from .manifest import file_sha256, load_manifest
 from .metrics import EditCounts, char_counts, item_flags, word_counts
 from .normalize import normalize
+from .resources import PeakMemory
 
 __all__ = ["evaluate", "main", "summarize"]
 
 SCHEMA = "nsb-eval-2"
-NORMALIZER = "nsb_eval.normalize v3 (tall som sifre, gammel tellemåte etter hundre/tusen)"
+NORMALIZER = "nsb_eval.normalize v4 (lesbar + ordrett profil, meningsbærende feil)"
 # Felt som må være like for å kunne fortsette en kjøring i samme mappe.
 IDENTITY_KEYS = (
     "backend", "model", "label", "model_revision", "device", "compute_type", "language",
@@ -80,6 +82,8 @@ def score_item(item_id: str, reference: str, hypothesis: str, meta: dict | None 
     hyp_n = normalize(hypothesis)
     w = word_counts(ref_n, hyp_n)
     c = char_counts(ref_n, hyp_n)
+    ref_v = normalize(reference, "ordrett")
+    hyp_v = normalize(hypothesis, "ordrett")
     return {
         "id": item_id,
         "reference": reference,
@@ -88,6 +92,10 @@ def score_item(item_id: str, reference: str, hypothesis: str, meta: dict | None 
         "hypothesis_norm": hyp_n,
         "words": w.to_dict(),
         "chars": c.to_dict(),
+        "reference_verbatim": ref_v,
+        "hypothesis_verbatim": hyp_v,
+        "words_verbatim": word_counts(ref_v, hyp_v).to_dict(),
+        "critical": critical_counts(reference, ref_n, hyp_n),
         "flags": item_flags(ref_n, hyp_n, w),
         "meta": meta or {},
     }
@@ -143,6 +151,13 @@ def summarize(rows: list[dict], group_by: list[str] | None = None) -> dict:
             for k, v in r["flags"].items():
                 if isinstance(v, bool) and v:
                     flags[k] += 1
+        v = EditCounts()
+        crit: dict = {}
+        for r in subset:
+            if "words_verbatim" in r:
+                v = v + EditCounts(**{k: r["words_verbatim"][k] for k in ("substitutions", "deletions", "insertions", "reference_length")})
+            if "critical" in r:
+                add_counts(crit, r["critical"])
         audio = sum(r.get("duration", 0.0) for r in subset)
         proc = sum(r.get("processing_seconds", 0.0) for r in subset)
         return {
@@ -158,6 +173,10 @@ def summarize(rows: list[dict], group_by: list[str] | None = None) -> dict:
             "repetition_loop_items": flags["repetition_loop"],
             "overlong_items": flags["overlong"],
             "empty_output_items": flags["empty_output"],
+            "verbatim_wer": round(v.error_rate, 6) if v.reference_length else None,
+            "verbatim_deletion_rate": round(v.deletions / v.reference_length, 6) if v.reference_length else None,
+            "verbatim_word_counts": v.to_dict(),
+            "critical": rates(crit) if crit else None,
             "audio_seconds": round(audio, 2),
             "processing_seconds": round(proc, 2),
             "real_time_factor": round(proc / audio, 4) if audio else None,
@@ -232,10 +251,13 @@ def evaluate(
         items_path.unlink()
 
     started = dt.datetime.now(dt.timezone.utc)
+    memory = PeakMemory(interval=1.0, gpu=str(backend_kwargs.get("device") or "").startswith("cuda"))
+    memory.__enter__()
     backend = make_backend(backend_kind, **backend_kwargs)
     log(f"[nsb_eval] {len(items)} setninger, {len(done)} allerede ferdige, modell {backend.describe().get('model')}")
 
     t_last = time.time()
+    ran_now = 0
     with open(items_path, "a", encoding="utf-8") as f:
         for i, item in enumerate(items, start=1):
             if item.id in done:
@@ -256,11 +278,15 @@ def evaluate(
             f.write(json.dumps(row, ensure_ascii=False) + "\n")
             f.flush()
             done[item.id] = row
+            ran_now += 1
             if time.time() - t_last > 30 or i == len(items):
                 log(f"[nsb_eval] {i}/{len(items)}")
                 t_last = time.time()
 
+    memory.__exit__(None, None, None)
     rows = rescore_rows([done[it.id] for it in items if it.id in done])
+    resources = memory.result()
+    resources["items_measured"] = ran_now  # minnet gjelder bare setningene kjørt i denne prosessen
     summary = {
         "schema": SCHEMA,
         "testset": testset or Path(manifest).stem,
@@ -274,6 +300,7 @@ def evaluate(
         "platform": platform.platform(),
         "normalizer": NORMALIZER,
         "language_from_meta": language_from_meta,
+        "resources": resources,
         **summarize(rows, group_by=group_by),
     }
     (out / "summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")

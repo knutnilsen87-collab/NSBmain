@@ -39,7 +39,7 @@ def rescore_dir(run_dir: Path, models: dict | None = None) -> dict:
     group_by = [k[3:] for k in old if k.startswith("by_")]
     keep = {k: v for k, v in old.items() if k in (
         "schema", "testset", "manifest", "manifest_sha256", "model", "started_utc", "finished_utc",
-        "git_sha", "python", "platform",
+        "git_sha", "python", "platform", "resources", "language_from_meta",
     )}
     model = dict(keep.get("model") or {})
     entry = (models or {}).get(model.get("model") or "")

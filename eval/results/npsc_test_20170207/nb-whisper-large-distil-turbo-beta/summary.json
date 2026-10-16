@@ -26,31 +26,58 @@
   "git_sha": "5fb95d573dbabd02d3e92f1e1bcd12768db91358",
   "python": "3.11.9",
   "platform": "Windows-10-10.0.26200-SP0",
-  "normalizer": "nsb_eval.normalize v3 (tall som sifre, gammel tellemåte etter hundre/tusen)",
-  "rescored_utc": "2026-10-16T12:21:57.995716+00:00",
+  "normalizer": "nsb_eval.normalize v4 (lesbar + ordrett profil, meningsbærende feil)",
+  "rescored_utc": "2026-10-16T16:51:19.396426+00:00",
   "items_total": 501,
   "items_failed": 0,
   "complete": true,
   "items_nonlexical_excluded": 0,
   "speech": {
     "items": 501,
-    "wer": 0.12589,
-    "cer": 0.064524,
+    "wer": 0.125334,
+    "cer": 0.064176,
     "word_counts": {
-      "substitutions": 560,
+      "substitutions": 556,
       "deletions": 523,
-      "insertions": 49,
+      "insertions": 48,
       "reference_length": 8992,
-      "errors": 1132
+      "errors": 1127
     },
-    "substitution_rate": 0.062278,
+    "substitution_rate": 0.061833,
     "deletion_rate": 0.058163,
-    "insertion_rate": 0.005449,
+    "insertion_rate": 0.005338,
     "hallucination_items": 0,
     "hallucination_rate": 0.0,
     "repetition_loop_items": 0,
     "overlong_items": 0,
     "empty_output_items": 1,
+    "verbatim_wer": 0.13846,
+    "verbatim_deletion_rate": 0.072297,
+    "verbatim_word_counts": {
+      "substitutions": 556,
+      "deletions": 660,
+      "insertions": 48,
+      "reference_length": 9129,
+      "errors": 1264
+    },
+    "critical": {
+      "negation": {
+        "reference": 112,
+        "missed": 5,
+        "added": 3,
+        "missed_rate": 0.044643
+      },
+      "number": {
+        "reference": 53,
+        "missed": 5,
+        "missed_rate": 0.09434
+      },
+      "name": {
+        "reference": 203,
+        "missed": 42,
+        "missed_rate": 0.206897
+      }
+    },
     "audio_seconds": 3891.19,
     "processing_seconds": 116.81,
     "real_time_factor": 0.03
@@ -58,23 +85,50 @@
   "by_dialect": {
     "Eastern Norway": {
       "items": 203,
-      "wer": 0.085502,
-      "cer": 0.048356,
+      "wer": 0.084572,
+      "cer": 0.047805,
       "word_counts": {
-        "substitutions": 113,
+        "substitutions": 111,
         "deletions": 153,
-        "insertions": 10,
+        "insertions": 9,
         "reference_length": 3228,
-        "errors": 276
+        "errors": 273
       },
-      "substitution_rate": 0.035006,
+      "substitution_rate": 0.034387,
       "deletion_rate": 0.047398,
-      "insertion_rate": 0.003098,
+      "insertion_rate": 0.002788,
       "hallucination_items": 0,
       "hallucination_rate": 0.0,
       "repetition_loop_items": 0,
       "overlong_items": 0,
       "empty_output_items": 1,
+      "verbatim_wer": 0.102369,
+      "verbatim_deletion_rate": 0.065917,
+      "verbatim_word_counts": {
+        "substitutions": 111,
+        "deletions": 217,
+        "insertions": 9,
+        "reference_length": 3292,
+        "errors": 337
+      },
+      "critical": {
+        "negation": {
+          "reference": 33,
+          "missed": 0,
+          "added": 0,
+          "missed_rate": 0.0
+        },
+        "number": {
+          "reference": 15,
+          "missed": 2,
+          "missed_rate": 0.133333
+        },
+        "name": {
+          "reference": 144,
+          "missed": 24,
+          "missed_rate": 0.166667
+        }
+      },
       "audio_seconds": 1425.67,
       "processing_seconds": 49.4,
       "real_time_factor": 0.0346
@@ -98,22 +152,49 @@
       "repetition_loop_items": 0,
       "overlong_items": 0,
       "empty_output_items": 0,
+      "verbatim_wer": 0.132958,
+      "verbatim_deletion_rate": 0.086184,
+      "verbatim_word_counts": {
+        "substitutions": 101,
+        "deletions": 199,
+        "insertions": 7,
+        "reference_length": 2309,
+        "errors": 307
+      },
+      "critical": {
+        "negation": {
+          "reference": 38,
+          "missed": 2,
+          "added": 2,
+          "missed_rate": 0.052632
+        },
+        "number": {
+          "reference": 11,
+          "missed": 0,
+          "missed_rate": 0.0
+        },
+        "name": {
+          "reference": 8,
+          "missed": 1,
+          "missed_rate": 0.125
+        }
+      },
       "audio_seconds": 932.0,
       "processing_seconds": 28.46,
       "real_time_factor": 0.0305
     },
     "Western Norway": {
       "items": 162,
-      "wer": 0.165662,
-      "cer": 0.074594,
+      "wer": 0.165088,
+      "cer": 0.074209,
       "word_counts": {
-        "substitutions": 346,
+        "substitutions": 344,
         "deletions": 199,
         "insertions": 32,
         "reference_length": 3483,
-        "errors": 577
+        "errors": 575
       },
-      "substitution_rate": 0.09934,
+      "substitution_rate": 0.098765,
       "deletion_rate": 0.057135,
       "insertion_rate": 0.009187,
       "hallucination_items": 0,
@@ -121,6 +202,33 @@
       "repetition_loop_items": 0,
       "overlong_items": 0,
       "empty_output_items": 0,
+      "verbatim_wer": 0.175737,
+      "verbatim_deletion_rate": 0.069161,
+      "verbatim_word_counts": {
+        "substitutions": 344,
+        "deletions": 244,
+        "insertions": 32,
+        "reference_length": 3528,
+        "errors": 620
+      },
+      "critical": {
+        "negation": {
+          "reference": 41,
+          "missed": 3,
+          "added": 1,
+          "missed_rate": 0.073171
+        },
+        "number": {
+          "reference": 27,
+          "missed": 3,
+          "missed_rate": 0.111111
+        },
+        "name": {
+          "reference": 51,
+          "missed": 17,
+          "missed_rate": 0.333333
+        }
+      },
       "audio_seconds": 1533.51,
       "processing_seconds": 38.96,
       "real_time_factor": 0.0254
@@ -129,23 +237,50 @@
   "by_standard": {
     "bm": {
       "items": 462,
-      "wer": 0.11025,
-      "cer": 0.059598,
+      "wer": 0.109654,
+      "cer": 0.059222,
       "word_counts": {
-        "substitutions": 397,
+        "substitutions": 393,
         "deletions": 482,
-        "insertions": 46,
+        "insertions": 45,
         "reference_length": 8390,
-        "errors": 925
+        "errors": 920
       },
-      "substitution_rate": 0.047318,
+      "substitution_rate": 0.046841,
       "deletion_rate": 0.057449,
-      "insertion_rate": 0.005483,
+      "insertion_rate": 0.005364,
       "hallucination_items": 0,
       "hallucination_rate": 0.0,
       "repetition_loop_items": 0,
       "overlong_items": 0,
       "empty_output_items": 1,
+      "verbatim_wer": 0.122931,
+      "verbatim_deletion_rate": 0.071504,
+      "verbatim_word_counts": {
+        "substitutions": 393,
+        "deletions": 609,
+        "insertions": 45,
+        "reference_length": 8517,
+        "errors": 1047
+      },
+      "critical": {
+        "negation": {
+          "reference": 100,
+          "missed": 3,
+          "added": 2,
+          "missed_rate": 0.03
+        },
+        "number": {
+          "reference": 40,
+          "missed": 2,
+          "missed_rate": 0.05
+        },
+        "name": {
+          "reference": 202,
+          "missed": 42,
+          "missed_rate": 0.207921
+        }
+      },
       "audio_seconds": 3585.92,
       "processing_seconds": 107.88,
       "real_time_factor": 0.0301
@@ -169,6 +304,33 @@
       "repetition_loop_items": 0,
       "overlong_items": 0,
       "empty_output_items": 0,
+      "verbatim_wer": 0.354575,
+      "verbatim_deletion_rate": 0.083333,
+      "verbatim_word_counts": {
+        "substitutions": 163,
+        "deletions": 51,
+        "insertions": 3,
+        "reference_length": 612,
+        "errors": 217
+      },
+      "critical": {
+        "negation": {
+          "reference": 12,
+          "missed": 2,
+          "added": 1,
+          "missed_rate": 0.166667
+        },
+        "number": {
+          "reference": 13,
+          "missed": 3,
+          "missed_rate": 0.230769
+        },
+        "name": {
+          "reference": 1,
+          "missed": 0,
+          "missed_rate": 0.0
+        }
+      },
       "audio_seconds": 305.27,
       "processing_seconds": 8.93,
       "real_time_factor": 0.0293

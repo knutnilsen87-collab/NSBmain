@@ -26,8 +26,8 @@
   "git_sha": "5fb95d573dbabd02d3e92f1e1bcd12768db91358",
   "python": "3.11.9",
   "platform": "Windows-10-10.0.26200-SP0",
-  "normalizer": "nsb_eval.normalize v3 (tall som sifre, gammel tellemåte etter hundre/tusen)",
-  "rescored_utc": "2026-10-16T12:21:35.866782+00:00",
+  "normalizer": "nsb_eval.normalize v4 (lesbar + ordrett profil, meningsbærende feil)",
+  "rescored_utc": "2026-10-16T16:50:46.922905+00:00",
   "items_total": 1195,
   "items_failed": 0,
   "complete": true,
@@ -35,7 +35,7 @@
   "speech": {
     "items": 1161,
     "wer": 0.346958,
-    "cer": 0.245993,
+    "cer": 0.246002,
     "word_counts": {
       "substitutions": 2825,
       "deletions": 4970,
@@ -51,6 +51,33 @@
     "repetition_loop_items": 1,
     "overlong_items": 1,
     "empty_output_items": 8,
+    "verbatim_wer": 0.3769,
+    "verbatim_deletion_rate": 0.249755,
+    "verbatim_word_counts": {
+      "substitutions": 2862,
+      "deletions": 6113,
+      "insertions": 250,
+      "reference_length": 24476,
+      "errors": 9225
+    },
+    "critical": {
+      "negation": {
+        "reference": 365,
+        "missed": 112,
+        "added": 24,
+        "missed_rate": 0.306849
+      },
+      "number": {
+        "reference": 150,
+        "missed": 39,
+        "missed_rate": 0.26
+      },
+      "name": {
+        "reference": 581,
+        "missed": 192,
+        "missed_rate": 0.330465
+      }
+    },
     "audio_seconds": 8420.05,
     "processing_seconds": 469.79,
     "real_time_factor": 0.0558
@@ -75,6 +102,33 @@
       "repetition_loop_items": 0,
       "overlong_items": 0,
       "empty_output_items": 1,
+      "verbatim_wer": 0.369547,
+      "verbatim_deletion_rate": 0.242798,
+      "verbatim_word_counts": {
+        "substitutions": 558,
+        "deletions": 1180,
+        "insertions": 58,
+        "reference_length": 4860,
+        "errors": 1796
+      },
+      "critical": {
+        "negation": {
+          "reference": 58,
+          "missed": 16,
+          "added": 5,
+          "missed_rate": 0.275862
+        },
+        "number": {
+          "reference": 23,
+          "missed": 3,
+          "missed_rate": 0.130435
+        },
+        "name": {
+          "reference": 71,
+          "missed": 24,
+          "missed_rate": 0.338028
+        }
+      },
       "audio_seconds": 1719.85,
       "processing_seconds": 111.86,
       "real_time_factor": 0.065
@@ -82,7 +136,7 @@
     "sørvest": {
       "items": 159,
       "wer": 0.421502,
-      "cer": 0.267122,
+      "cer": 0.267194,
       "word_counts": {
         "substitutions": 578,
         "deletions": 580,
@@ -98,6 +152,33 @@
       "repetition_loop_items": 1,
       "overlong_items": 0,
       "empty_output_items": 1,
+      "verbatim_wer": 0.441892,
+      "verbatim_deletion_rate": 0.23483,
+      "verbatim_word_counts": {
+        "substitutions": 581,
+        "deletions": 685,
+        "insertions": 23,
+        "reference_length": 2917,
+        "errors": 1289
+      },
+      "critical": {
+        "negation": {
+          "reference": 45,
+          "missed": 11,
+          "added": 2,
+          "missed_rate": 0.244444
+        },
+        "number": {
+          "reference": 21,
+          "missed": 6,
+          "missed_rate": 0.285714
+        },
+        "name": {
+          "reference": 114,
+          "missed": 45,
+          "missed_rate": 0.394737
+        }
+      },
       "audio_seconds": 915.6,
       "processing_seconds": 47.65,
       "real_time_factor": 0.052
@@ -121,6 +202,33 @@
       "repetition_loop_items": 0,
       "overlong_items": 0,
       "empty_output_items": 1,
+      "verbatim_wer": 0.388019,
+      "verbatim_deletion_rate": 0.25796,
+      "verbatim_word_counts": {
+        "substitutions": 218,
+        "deletions": 478,
+        "insertions": 23,
+        "reference_length": 1853,
+        "errors": 719
+      },
+      "critical": {
+        "negation": {
+          "reference": 25,
+          "missed": 5,
+          "added": 1,
+          "missed_rate": 0.2
+        },
+        "number": {
+          "reference": 6,
+          "missed": 3,
+          "missed_rate": 0.5
+        },
+        "name": {
+          "reference": 26,
+          "missed": 4,
+          "missed_rate": 0.153846
+        }
+      },
       "audio_seconds": 663.83,
       "processing_seconds": 28.44,
       "real_time_factor": 0.0428
@@ -144,6 +252,33 @@
       "repetition_loop_items": 0,
       "overlong_items": 0,
       "empty_output_items": 0,
+      "verbatim_wer": 0.479399,
+      "verbatim_deletion_rate": 0.264921,
+      "verbatim_word_counts": {
+        "substitutions": 529,
+        "deletions": 688,
+        "insertions": 28,
+        "reference_length": 2597,
+        "errors": 1245
+      },
+      "critical": {
+        "negation": {
+          "reference": 39,
+          "missed": 11,
+          "added": 5,
+          "missed_rate": 0.282051
+        },
+        "number": {
+          "reference": 25,
+          "missed": 8,
+          "missed_rate": 0.32
+        },
+        "name": {
+          "reference": 73,
+          "missed": 33,
+          "missed_rate": 0.452055
+        }
+      },
       "audio_seconds": 864.25,
       "processing_seconds": 47.08,
       "real_time_factor": 0.0545
@@ -167,6 +302,33 @@
       "repetition_loop_items": 0,
       "overlong_items": 1,
       "empty_output_items": 5,
+      "verbatim_wer": 0.340926,
+      "verbatim_deletion_rate": 0.251612,
+      "verbatim_word_counts": {
+        "substitutions": 976,
+        "deletions": 3082,
+        "insertions": 118,
+        "reference_length": 12249,
+        "errors": 4176
+      },
+      "critical": {
+        "negation": {
+          "reference": 198,
+          "missed": 69,
+          "added": 11,
+          "missed_rate": 0.348485
+        },
+        "number": {
+          "reference": 75,
+          "missed": 19,
+          "missed_rate": 0.253333
+        },
+        "name": {
+          "reference": 297,
+          "missed": 86,
+          "missed_rate": 0.289562
+        }
+      },
       "audio_seconds": 4256.52,
       "processing_seconds": 234.76,
       "real_time_factor": 0.0552
@@ -192,6 +354,33 @@
       "repetition_loop_items": 0,
       "overlong_items": 1,
       "empty_output_items": 5,
+      "verbatim_wer": 0.338843,
+      "verbatim_deletion_rate": 0.253119,
+      "verbatim_word_counts": {
+        "substitutions": 1395,
+        "deletions": 4686,
+        "insertions": 192,
+        "reference_length": 18513,
+        "errors": 6273
+      },
+      "critical": {
+        "negation": {
+          "reference": 280,
+          "missed": 90,
+          "added": 16,
+          "missed_rate": 0.321429
+        },
+        "number": {
+          "reference": 103,
+          "missed": 25,
+          "missed_rate": 0.242718
+        },
+        "name": {
+          "reference": 413,
+          "missed": 121,
+          "missed_rate": 0.292978
+        }
+      },
       "audio_seconds": 6430.97,
       "processing_seconds": 362.55,
       "real_time_factor": 0.0564
@@ -199,7 +388,7 @@
     "nn": {
       "items": 304,
       "wer": 0.474532,
-      "cer": 0.283754,
+      "cer": 0.283789,
       "word_counts": {
         "substitutions": 1452,
         "deletions": 1190,
@@ -215,6 +404,33 @@
       "repetition_loop_items": 1,
       "overlong_items": 0,
       "empty_output_items": 3,
+      "verbatim_wer": 0.495053,
+      "verbatim_deletion_rate": 0.239309,
+      "verbatim_word_counts": {
+        "substitutions": 1467,
+        "deletions": 1427,
+        "insertions": 58,
+        "reference_length": 5963,
+        "errors": 2952
+      },
+      "critical": {
+        "negation": {
+          "reference": 85,
+          "missed": 22,
+          "added": 8,
+          "missed_rate": 0.258824
+        },
+        "number": {
+          "reference": 47,
+          "missed": 14,
+          "missed_rate": 0.297872
+        },
+        "name": {
+          "reference": 168,
+          "missed": 71,
+          "missed_rate": 0.422619
+        }
+      },
       "audio_seconds": 1989.08,
       "processing_seconds": 107.24,
       "real_time_factor": 0.0539

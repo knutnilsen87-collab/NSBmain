@@ -103,6 +103,11 @@ def test_normalize(raw, expected):
         ("hundre og en og tjue", "121"),
         ("tusen og en natt", "1001 natt"),
         ("hundre og fem og to", "105 og 2"),
+        # Forkortelser (funnet i NPSC-målingen 2026-10-16)
+        ("en milliard kroner per år", "1 mrd. kr per år"),
+        ("hundre og ti prosent", "110 pst."),
+        ("innstilling hundre og enogsytti l jamfør proposisjon seks l", "Innst. 171 L jf. Prop. 6 L"),
+        ("fire millioner kroner", "4 mill. kr"),
     ],
 )
 def test_number_words_and_digits_compare_equal(words, digits):

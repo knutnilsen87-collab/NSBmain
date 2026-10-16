@@ -6,6 +6,8 @@ Et manifest er JSONL med én setning per linje. Feltene som leses:
 - fasit: ``text`` | ``sentence_text`` | ``transcript`` (tom streng er lov,
   for eksempel i stillhetssettet)
 - id: ``id`` | ``sentence_id`` (ellers lydstien)
+- ``verified: false`` betyr at fasiten ikke er kontrollert mot opptaket ennå.
+  Slike rader hoppes over, så uverifiserte fasiter aldri havner i en måling.
 
 Relative lydstier løses mot ``audio_root``. Gamle absolutte Windows-stier kan
 skrives om med ``path_map`` (for eksempel ``F:\\NorwegianSpeechBase`` ->
@@ -80,6 +82,8 @@ def load_manifest(
             if not line:
                 continue
             row = json.loads(line)
+            if row.get("verified") is False:
+                continue
             audio = _first(row, _AUDIO_KEYS)
             if not audio:
                 raise ValueError(f"{path}:{lineno}: mangler lydsti")

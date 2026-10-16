@@ -28,6 +28,11 @@ def collect(results_dir: str | Path) -> list[dict]:
                 "substitution_rate": sp.get("substitution_rate"),
                 "deletion_rate": sp.get("deletion_rate"),
                 "insertion_rate": sp.get("insertion_rate"),
+                "verbatim_wer": sp.get("verbatim_wer"),
+                "verbatim_deletion_rate": sp.get("verbatim_deletion_rate"),
+                "critical": sp.get("critical"),
+                "peak_memory_mb": (s.get("resources") or {}).get("peak_rss_mb"),
+                "peak_gpu_memory_mb": (s.get("resources") or {}).get("peak_gpu_mb"),
                 "hallucination_rate": sp.get("hallucination_rate"),
                 "repetition_loop_items": sp.get("repetition_loop_items"),
                 "silence_hallucination_rate": si.get("hallucination_on_silence_rate"),
@@ -49,6 +54,24 @@ def _pct(v) -> str:
     return "–" if v is None else f"{100 * v:.1f} %"
 
 
+def _crit(r: dict, cat: str) -> str:
+    c = (r.get("critical") or {}).get(cat)
+    if not c or not c.get("reference"):
+        return "–"
+    return f"{c['missed']}/{c['reference']}"
+
+
+def _device(r: dict) -> str:
+    return f"{r.get('device') or '–'}/{r.get('compute_type') or '–'}"
+
+
+def _mem(r: dict) -> str:
+    rss, gpu = r.get("peak_memory_mb"), r.get("peak_gpu_memory_mb")
+    if rss is None and gpu is None:
+        return "–"
+    return f"{rss or '–'} RAM / {gpu or '–'} GPU" if gpu else f"{rss} RAM"
+
+
 def to_markdown(rows: list[dict]) -> str:
     lines = ["# NSB-målestokk: resultater", ""]
     for testset in sorted({r["testset"] for r in rows}):
@@ -66,15 +89,17 @@ def to_markdown(rows: list[dict]) -> str:
                 )
         else:
             lines += [
-                "| Modell | WER | CER | Innsetting | Utelatelse | Hallusinasjon | Sanntidsfaktor | Klipp (feilet) |",
-                "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
+                "| Modell | Enhet | WER | Ordrett WER | CER | Innsetting | Utelatelse | Hallusinasjon | Tapte negasjoner | Feil tall | Feil navn | Sanntidsfaktor | Minne (MB) | Klipp (feilet) |",
+                "| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
             ]
             for r in sub:
                 lines.append(
-                    f"| {r['model']} | {_pct(r['wer'])} | {_pct(r['cer'])} | {_pct(r['insertion_rate'])} | "
-                    f"{_pct(r['deletion_rate'])} | {_pct(r['hallucination_rate'])} | {r['real_time_factor'] or '–'} | "
-                    f"{r['items']} ({r['failed']}) |"
+                    f"| {r['model']} | {_device(r)} | {_pct(r['wer'])} | {_pct(r['verbatim_wer'])} | {_pct(r['cer'])} | "
+                    f"{_pct(r['insertion_rate'])} | {_pct(r['deletion_rate'])} | {_pct(r['hallucination_rate'])} | "
+                    f"{_crit(r, 'negation')} | {_crit(r, 'number')} | {_crit(r, 'name')} | "
+                    f"{r['real_time_factor'] or '–'} | {_mem(r)} | {r['items']} ({r['failed']}) |"
                 )
+            lines += ["", "Tapte negasjoner, feil tall og feil navn: tapte av antall i fasiten. Navn er ord med stor forbokstav i fasiten (grovt mål).", ""]
         lines.append("")
     return "\n".join(lines)
 

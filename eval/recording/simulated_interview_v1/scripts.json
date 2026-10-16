@@ -1,0 +1,75 @@
+{
+  "version": 1,
+  "description": "Fiktive avhør for testing av transkribering med to talere. Alle navn, adresser, beløp og hendelser er oppdiktet.",
+  "interviews": [
+    {
+      "id": "av-01",
+      "title": "Vitneavhør, bedrageri ved bruktbilsalg",
+      "roles": ["avhører", "vitne"],
+      "turns": [
+        {"speaker": "avhører", "say": "Avhøret starter klokka ti femten. Til stede er politibetjent Ingrid Solheim og vitnet Arne Bråten. Du er her som vitne og har plikt til å forklare deg sannferdig. Har du forstått det?"},
+        {"speaker": "vitne", "say": "Ja, det har jeg forstått."},
+        {"speaker": "avhører", "say": "Kan du fortelle hva som skjedde den fjortende mars?"},
+        {"speaker": "vitne", "say": "Jeg kjøpte en Volvo av en mann som kalte seg Tom Eriksen. Vi møttes på en parkeringsplass ved Alnabru, og jeg betalte hundre og førtifem tusen kroner."},
+        {"speaker": "avhører", "say": "Betalte du kontant eller med overføring?"},
+        {"speaker": "vitne", "say": "Jeg overførte pengene til en konto han oppga. Jeg betalte ikke kontant, det vil jeg understreke."},
+        {"speaker": "avhører", "say": "Fikk du vognkort og nøkler?"},
+        {"speaker": "vitne", "say": "Jeg fikk nøklene, men ikke vognkortet. Han sa at det skulle komme i posten innen en uke. Det kom aldri."},
+        {"speaker": "avhører", "say": "Har du hørt fra ham etter dette?"},
+        {"speaker": "vitne", "say": "Nei. Telefonnummeret han brukte, null fire fem, tolv, trettifire, femtiseks, var stengt allerede dagen etter."},
+        {"speaker": "avhører", "say": "Så du om han hadde med seg noen?"},
+        {"speaker": "vitne", "say": "Det satt en kvinne i en grå Toyota et stykke unna. Jeg er ikke sikker på om hun hørte til ham."},
+        {"speaker": "avhører", "say": "Kan du beskrive mannen?"},
+        {"speaker": "vitne", "say": "Han var rundt førti år, mørkt hår, kanskje en og åtti høy. Han snakket østlandsk, ikke noen spesiell dialekt."},
+        {"speaker": "avhører", "say": "Er det noe mer du vil tilføye?"},
+        {"speaker": "vitne", "say": "Bare at jeg sendte en melding til ham klokka halv tolv samme kveld, og den ble aldri lest."},
+        {"speaker": "avhører", "say": "Takk. Avhøret avsluttes klokka ti førtito."}
+      ]
+    },
+    {
+      "id": "av-02",
+      "title": "Vitneavhør, trafikkulykke i rundkjøring",
+      "roles": ["avhører", "vitne"],
+      "turns": [
+        {"speaker": "avhører", "say": "Dette er avhør av vitne Siri Haugland, og klokka er fjorten null fem. Hvor var du da ulykken skjedde?"},
+        {"speaker": "vitne", "say": "Jeg sto ved fotgjengerovergangen på Kongsgata, rett før rundkjøringen."},
+        {"speaker": "avhører", "say": "Hva så du?"},
+        {"speaker": "vitne", "say": "En hvit varebil kom inn i rundkjøringen fra venstre. Den stoppet ikke, og den traff en syklist som allerede var i rundkjøringen."},
+        {"speaker": "avhører", "say": "Hvor fort tror du varebilen kjørte?"},
+        {"speaker": "vitne", "say": "Det er vanskelig å si. Kanskje femti, kanskje litt mer. Det var i hvert fall ikke under tretti."},
+        {"speaker": "avhører", "say": "Var det lyst eller mørkt?"},
+        {"speaker": "vitne", "say": "Det var lyst, men det regnet. Veien var våt."},
+        {"speaker": "avhører", "say": "Så du registreringsnummeret?"},
+        {"speaker": "vitne", "say": "Jeg så bare de første bokstavene, E K, og så tror jeg det var en sju. Resten fikk jeg ikke med meg."},
+        {"speaker": "avhører", "say": "Hva gjorde sjåføren etter sammenstøtet?"},
+        {"speaker": "vitne", "say": "Han stoppet omtrent tjue meter lenger fram, gikk ut og så på syklisten. Så ringte han noen. Jeg vet ikke om det var nødnummeret."},
+        {"speaker": "avhører", "say": "Snakket du med ham?"},
+        {"speaker": "vitne", "say": "Nei, jeg snakket ikke med ham. Jeg ringte en en tre og ble hos syklisten til ambulansen kom, etter cirka åtte minutter."},
+        {"speaker": "avhører", "say": "Takk for forklaringen. Avhøret avsluttes klokka fjorten tjuetre."}
+      ]
+    },
+    {
+      "id": "av-03",
+      "title": "Avhør av mistenkt, økonomisk utroskap",
+      "roles": ["avhører", "mistenkt"],
+      "turns": [
+        {"speaker": "avhører", "say": "Du er avhørt som mistenkt for utroskap etter straffeloven paragraf tre hundre og nitti."},
+        {"speaker": "avhører", "say": "Du har rett til å ha forsvarer til stede, og du har ingen plikt til å forklare deg. Ønsker du å forklare deg?"},
+        {"speaker": "mistenkt", "say": "Ja, jeg ønsker å forklare meg, men jeg vil ha med at advokat Lene Myhre ikke kunne komme i dag."},
+        {"speaker": "avhører", "say": "Du var daglig leder i Fjordlys Eiendom AS fra januar tjuetjueto. Stemmer det?"},
+        {"speaker": "mistenkt", "say": "Det stemmer. Jeg var daglig leder fram til september tjuetjuefire."},
+        {"speaker": "avhører", "say": "I perioden ble det overført til sammen to komma tre millioner kroner til et selskap du eier selv. Hva var bakgrunnen for det?"},
+        {"speaker": "mistenkt", "say": "Det var betaling for konsulenttjenester. Styret visste om avtalen, og jeg har aldri skjult noe."},
+        {"speaker": "avhører", "say": "Finnes det en skriftlig avtale?"},
+        {"speaker": "mistenkt", "say": "Det finnes ikke en signert avtale, nei. Men det står i referatet fra styremøtet den tolvte mai tjuetjueto."},
+        {"speaker": "avhører", "say": "Styreleder Per Kvamme har forklart at styret ikke godkjente noen slik avtale."},
+        {"speaker": "mistenkt", "say": "Det er ikke riktig. Han var til stede på møtet. Jeg kan ikke forstå at han sier noe annet."},
+        {"speaker": "avhører", "say": "Hvor mange timer fakturerte selskapet ditt?"},
+        {"speaker": "mistenkt", "say": "Rundt tusen to hundre timer over to og et halvt år, til ett tusen ni hundre kroner timen."},
+        {"speaker": "avhører", "say": "Det blir to komma to åtte millioner. Hvordan forklarer du differansen?"},
+        {"speaker": "mistenkt", "say": "Det kan være reiseutgifter. Jeg husker ikke uten å se på bilagene."},
+        {"speaker": "avhører", "say": "Vi avslutter her. Klokka er elleve tretti."}
+      ]
+    }
+  ]
+}

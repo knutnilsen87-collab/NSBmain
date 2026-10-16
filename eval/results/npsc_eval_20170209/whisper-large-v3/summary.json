@@ -26,24 +26,24 @@
   "git_sha": "5fb95d573dbabd02d3e92f1e1bcd12768db91358",
   "python": "3.11.9",
   "platform": "Windows-10-10.0.26200-SP0",
-  "normalizer": "nsb_eval.normalize v3 (tall som sifre, gammel tellemåte etter hundre/tusen)",
-  "rescored_utc": "2026-10-16T12:21:55.091289+00:00",
+  "normalizer": "nsb_eval.normalize v4 (lesbar + ordrett profil, meningsbærende feil)",
+  "rescored_utc": "2026-10-16T16:51:14.625854+00:00",
   "items_total": 582,
   "items_failed": 0,
   "complete": true,
   "items_nonlexical_excluded": 0,
   "speech": {
     "items": 582,
-    "wer": 0.188574,
-    "cer": 0.071473,
+    "wer": 0.188485,
+    "cer": 0.071414,
     "word_counts": {
-      "substitutions": 1498,
+      "substitutions": 1497,
       "deletions": 505,
       "insertions": 126,
       "reference_length": 11290,
-      "errors": 2129
+      "errors": 2128
     },
-    "substitution_rate": 0.132684,
+    "substitution_rate": 0.132595,
     "deletion_rate": 0.04473,
     "insertion_rate": 0.01116,
     "hallucination_items": 0,
@@ -51,6 +51,33 @@
     "repetition_loop_items": 0,
     "overlong_items": 0,
     "empty_output_items": 0,
+    "verbatim_wer": 0.201759,
+    "verbatim_deletion_rate": 0.060432,
+    "verbatim_word_counts": {
+      "substitutions": 1502,
+      "deletions": 694,
+      "insertions": 121,
+      "reference_length": 11484,
+      "errors": 2317
+    },
+    "critical": {
+      "negation": {
+        "reference": 129,
+        "missed": 9,
+        "added": 5,
+        "missed_rate": 0.069767
+      },
+      "number": {
+        "reference": 147,
+        "missed": 31,
+        "missed_rate": 0.210884
+      },
+      "name": {
+        "reference": 269,
+        "missed": 84,
+        "missed_rate": 0.312268
+      }
+    },
     "audio_seconds": 4892.96,
     "processing_seconds": 562.36,
     "real_time_factor": 0.1149
@@ -58,16 +85,16 @@
   "by_dialect": {
     "ukjent": {
       "items": 582,
-      "wer": 0.188574,
-      "cer": 0.071473,
+      "wer": 0.188485,
+      "cer": 0.071414,
       "word_counts": {
-        "substitutions": 1498,
+        "substitutions": 1497,
         "deletions": 505,
         "insertions": 126,
         "reference_length": 11290,
-        "errors": 2129
+        "errors": 2128
       },
-      "substitution_rate": 0.132684,
+      "substitution_rate": 0.132595,
       "deletion_rate": 0.04473,
       "insertion_rate": 0.01116,
       "hallucination_items": 0,
@@ -75,6 +102,33 @@
       "repetition_loop_items": 0,
       "overlong_items": 0,
       "empty_output_items": 0,
+      "verbatim_wer": 0.201759,
+      "verbatim_deletion_rate": 0.060432,
+      "verbatim_word_counts": {
+        "substitutions": 1502,
+        "deletions": 694,
+        "insertions": 121,
+        "reference_length": 11484,
+        "errors": 2317
+      },
+      "critical": {
+        "negation": {
+          "reference": 129,
+          "missed": 9,
+          "added": 5,
+          "missed_rate": 0.069767
+        },
+        "number": {
+          "reference": 147,
+          "missed": 31,
+          "missed_rate": 0.210884
+        },
+        "name": {
+          "reference": 269,
+          "missed": 84,
+          "missed_rate": 0.312268
+        }
+      },
       "audio_seconds": 4892.96,
       "processing_seconds": 562.36,
       "real_time_factor": 0.1149
@@ -83,16 +137,16 @@
   "by_standard": {
     "ukjent": {
       "items": 582,
-      "wer": 0.188574,
-      "cer": 0.071473,
+      "wer": 0.188485,
+      "cer": 0.071414,
       "word_counts": {
-        "substitutions": 1498,
+        "substitutions": 1497,
         "deletions": 505,
         "insertions": 126,
         "reference_length": 11290,
-        "errors": 2129
+        "errors": 2128
       },
-      "substitution_rate": 0.132684,
+      "substitution_rate": 0.132595,
       "deletion_rate": 0.04473,
       "insertion_rate": 0.01116,
       "hallucination_items": 0,
@@ -100,6 +154,33 @@
       "repetition_loop_items": 0,
       "overlong_items": 0,
       "empty_output_items": 0,
+      "verbatim_wer": 0.201759,
+      "verbatim_deletion_rate": 0.060432,
+      "verbatim_word_counts": {
+        "substitutions": 1502,
+        "deletions": 694,
+        "insertions": 121,
+        "reference_length": 11484,
+        "errors": 2317
+      },
+      "critical": {
+        "negation": {
+          "reference": 129,
+          "missed": 9,
+          "added": 5,
+          "missed_rate": 0.069767
+        },
+        "number": {
+          "reference": 147,
+          "missed": 31,
+          "missed_rate": 0.210884
+        },
+        "name": {
+          "reference": 269,
+          "missed": 84,
+          "missed_rate": 0.312268
+        }
+      },
       "audio_seconds": 4892.96,
       "processing_seconds": 562.36,
       "real_time_factor": 0.1149
