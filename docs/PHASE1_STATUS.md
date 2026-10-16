@@ -23,7 +23,7 @@ Statusverdier: **verifisert** (gjort og kontrollert, med bevis), **venter på kj
 | Samme modeller på CPU | Venter på kjøring | `scripts/RUN_PHASE1_CLOSEOUT.cmd` steg 3: fire modeller, int8, 100 setninger |
 | Nynorsk dekodet som nynorsk | Venter på kjøring | `RUN_PHASE1_CLOSEOUT.cmd` steg 1 (`--language-from-meta standard`) |
 | Rettelser i treningskoden | Verifisert | Røyktester med liten modell og ekte Whisper-tokenizer: 33 bestått 2026-10-16. Egen CI-jobb (`train-smoke`) kjører dem ved hver endring og feiler hvis de hoppes over |
-| Åpen publisering av resultater | Delvis | Kode, testsett og resultater i det offentlige repoet. Resultatsiden er publisert, men privat til eier deler den |
+| Åpen publisering av resultater | Verifisert | Kode, testsett og resultater i det offentlige repoet. Resultatsiden er delt med lenke (alle med lenken kan åpne den), oppdatert med v4-tallene |
 | Modell for fase 2 (diktering) | Foreløpig | Kandidat: NB-Whisper distil-turbo. Endelig valg etter måling på juridisk diktat mot [godkjenningskravene](ACCEPTANCE_CRITERIA.md) |
 | Modell for fase 3 (ordrett) | Blokkert | Ingen modell oppfyller behovet. Krever avhørsopptak og undersøkelse av ordrette NB-Whisper-varianter |
 | Godkjenningskrav fastsatt før nye forsøk | Blokkert | Forslag i [ACCEPTANCE_CRITERIA.md](ACCEPTANCE_CRITERIA.md), venter på godkjenning fra prosjekteier |
