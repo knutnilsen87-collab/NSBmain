@@ -1,0 +1,296 @@
+{
+  "schema": "nsb-eval-2",
+  "testset": "npsc_test_20170207_100",
+  "manifest": "eval/testsets/npsc_test_20170207.jsonl",
+  "manifest_sha256": "491eab00fdd8f234d4f5b7210ff69fd97980dd7f606b53e7d9cd402c88c4e444",
+  "model": {
+    "backend": "faster-whisper",
+    "model": "nb-whisper-medium",
+    "model_ref": "F:\\prosjekter_MAIN\\NorwegianSpeechBase\\models\\benchmark\\nb-whisper-medium\\ct2",
+    "model_revision": "0ed074d5985bd56ca4140159a9dbffbc3fb5117e",
+    "model_sha256": "1721dd1dc26d7a543280aaedbc8ab2832578cef4bf834d4fdd838393f36d278a",
+    "device": "cuda",
+    "compute_type": "float16",
+    "language": "no",
+    "task": "transcribe",
+    "beam_size": 5,
+    "temperature": 0.0,
+    "condition_on_previous_text": false,
+    "vad_filter": false,
+    "faster_whisper_version": "1.2.1",
+    "ctranslate2_version": "4.8.3",
+    "cuda_devices": 1
+  },
+  "started_utc": "2026-10-16T17:36:15.294930+00:00",
+  "finished_utc": "2026-10-16T17:37:08.186933+00:00",
+  "git_sha": "d65ec4c3824a9362c16754f47119aea0a2647529",
+  "python": "3.11.9",
+  "platform": "Windows-10-10.0.26200-SP0",
+  "normalizer": "nsb_eval.normalize v4 (lesbar + ordrett profil, meningsbærende feil)",
+  "language_from_meta": null,
+  "resources": {
+    "peak_rss_mb": 3075.2,
+    "peak_gpu_mb": 6453.0,
+    "gpu_baseline_mb": 4122.0,
+    "sampler": "psutil",
+    "items_measured": 100
+  },
+  "items_total": 100,
+  "items_failed": 0,
+  "complete": true,
+  "items_nonlexical_excluded": 0,
+  "speech": {
+    "items": 100,
+    "wer": 0.143989,
+    "cer": 0.093486,
+    "word_counts": {
+      "substitutions": 97,
+      "deletions": 76,
+      "insertions": 45,
+      "reference_length": 1514,
+      "errors": 218
+    },
+    "substitution_rate": 0.064069,
+    "deletion_rate": 0.050198,
+    "insertion_rate": 0.029723,
+    "hallucination_items": 1,
+    "hallucination_rate": 0.01,
+    "repetition_loop_items": 1,
+    "overlong_items": 1,
+    "empty_output_items": 0,
+    "verbatim_wer": 0.147929,
+    "verbatim_deletion_rate": 0.054569,
+    "verbatim_word_counts": {
+      "substitutions": 97,
+      "deletions": 83,
+      "insertions": 45,
+      "reference_length": 1521,
+      "errors": 225
+    },
+    "critical": {
+      "negation": {
+        "reference": 29,
+        "missed": 2,
+        "added": 2,
+        "missed_rate": 0.068966
+      },
+      "number": {
+        "reference": 7,
+        "missed": 2,
+        "missed_rate": 0.285714
+      },
+      "name": {
+        "reference": 66,
+        "missed": 18,
+        "missed_rate": 0.272727
+      }
+    },
+    "audio_seconds": 695.99,
+    "processing_seconds": 35.84,
+    "real_time_factor": 0.0515
+  },
+  "by_dialect": {
+    "Eastern Norway": {
+      "items": 31,
+      "wer": 0.129412,
+      "cer": 0.064559,
+      "word_counts": {
+        "substitutions": 29,
+        "deletions": 12,
+        "insertions": 3,
+        "reference_length": 340,
+        "errors": 44
+      },
+      "substitution_rate": 0.085294,
+      "deletion_rate": 0.035294,
+      "insertion_rate": 0.008824,
+      "hallucination_items": 0,
+      "hallucination_rate": 0.0,
+      "repetition_loop_items": 0,
+      "overlong_items": 0,
+      "empty_output_items": 0,
+      "verbatim_wer": 0.139535,
+      "verbatim_deletion_rate": 0.046512,
+      "verbatim_word_counts": {
+        "substitutions": 29,
+        "deletions": 16,
+        "insertions": 3,
+        "reference_length": 344,
+        "errors": 48
+      },
+      "critical": {
+        "negation": {
+          "reference": 2,
+          "missed": 0,
+          "added": 0,
+          "missed_rate": 0.0
+        },
+        "number": {
+          "reference": 2,
+          "missed": 1,
+          "missed_rate": 0.5
+        },
+        "name": {
+          "reference": 61,
+          "missed": 16,
+          "missed_rate": 0.262295
+        }
+      },
+      "audio_seconds": 175.09,
+      "processing_seconds": 9.74,
+      "real_time_factor": 0.0556
+    },
+    "Southern Norway": {
+      "items": 65,
+      "wer": 0.142218,
+      "cer": 0.100603,
+      "word_counts": {
+        "substitutions": 56,
+        "deletions": 61,
+        "insertions": 42,
+        "reference_length": 1118,
+        "errors": 159
+      },
+      "substitution_rate": 0.050089,
+      "deletion_rate": 0.054562,
+      "insertion_rate": 0.037567,
+      "hallucination_items": 1,
+      "hallucination_rate": 0.015385,
+      "repetition_loop_items": 1,
+      "overlong_items": 1,
+      "empty_output_items": 0,
+      "verbatim_wer": 0.144514,
+      "verbatim_deletion_rate": 0.057092,
+      "verbatim_word_counts": {
+        "substitutions": 56,
+        "deletions": 64,
+        "insertions": 42,
+        "reference_length": 1121,
+        "errors": 162
+      },
+      "critical": {
+        "negation": {
+          "reference": 27,
+          "missed": 2,
+          "added": 2,
+          "missed_rate": 0.074074
+        },
+        "number": {
+          "reference": 3,
+          "missed": 0,
+          "missed_rate": 0.0
+        },
+        "name": {
+          "reference": 3,
+          "missed": 2,
+          "missed_rate": 0.666667
+        }
+      },
+      "audio_seconds": 496.74,
+      "processing_seconds": 24.68,
+      "real_time_factor": 0.0497
+    },
+    "Western Norway": {
+      "items": 4,
+      "wer": 0.267857,
+      "cer": 0.142077,
+      "word_counts": {
+        "substitutions": 12,
+        "deletions": 3,
+        "insertions": 0,
+        "reference_length": 56,
+        "errors": 15
+      },
+      "substitution_rate": 0.214286,
+      "deletion_rate": 0.053571,
+      "insertion_rate": 0.0,
+      "hallucination_items": 0,
+      "hallucination_rate": 0.0,
+      "repetition_loop_items": 0,
+      "overlong_items": 0,
+      "empty_output_items": 0,
+      "verbatim_wer": 0.267857,
+      "verbatim_deletion_rate": 0.053571,
+      "verbatim_word_counts": {
+        "substitutions": 12,
+        "deletions": 3,
+        "insertions": 0,
+        "reference_length": 56,
+        "errors": 15
+      },
+      "critical": {
+        "negation": {
+          "reference": 0,
+          "missed": 0,
+          "added": 0,
+          "missed_rate": null
+        },
+        "number": {
+          "reference": 2,
+          "missed": 1,
+          "missed_rate": 0.5
+        },
+        "name": {
+          "reference": 2,
+          "missed": 0,
+          "missed_rate": 0.0
+        }
+      },
+      "audio_seconds": 24.16,
+      "processing_seconds": 1.43,
+      "real_time_factor": 0.0592
+    }
+  },
+  "by_standard": {
+    "bm": {
+      "items": 100,
+      "wer": 0.143989,
+      "cer": 0.093486,
+      "word_counts": {
+        "substitutions": 97,
+        "deletions": 76,
+        "insertions": 45,
+        "reference_length": 1514,
+        "errors": 218
+      },
+      "substitution_rate": 0.064069,
+      "deletion_rate": 0.050198,
+      "insertion_rate": 0.029723,
+      "hallucination_items": 1,
+      "hallucination_rate": 0.01,
+      "repetition_loop_items": 1,
+      "overlong_items": 1,
+      "empty_output_items": 0,
+      "verbatim_wer": 0.147929,
+      "verbatim_deletion_rate": 0.054569,
+      "verbatim_word_counts": {
+        "substitutions": 97,
+        "deletions": 83,
+        "insertions": 45,
+        "reference_length": 1521,
+        "errors": 225
+      },
+      "critical": {
+        "negation": {
+          "reference": 29,
+          "missed": 2,
+          "added": 2,
+          "missed_rate": 0.068966
+        },
+        "number": {
+          "reference": 7,
+          "missed": 2,
+          "missed_rate": 0.285714
+        },
+        "name": {
+          "reference": 66,
+          "missed": 18,
+          "missed_rate": 0.272727
+        }
+      },
+      "audio_seconds": 695.99,
+      "processing_seconds": 35.84,
+      "real_time_factor": 0.0515
+    }
+  }
+}

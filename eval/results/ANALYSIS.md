@@ -1,6 +1,6 @@
 # Analyse av første måling (2026-10-16)
 
-Første versjon av NSB-målestokken: fem modeller, fire faste testsett, 20 kjøringer på RTX 4080 (faster-whisper 1.2.1, float16), ingen feilede setninger. Tallene er scoret med `nsb_eval.normalize` v4, som har to profiler: lesbar (fyllord og avbrutte ord fjernet) og ordrett (beholdt). Tabellene står i [BENCHMARK.md](BENCHMARK.md); modellrevisjoner og sjekksummer i [models.json](models.json).
+Første versjon av NSB-målestokken: fem modeller, fire faste testsett, 20 kjøringer på RTX 4080 (faster-whisper 1.2.1, float16), ingen feilede setninger. I tillegg 12 kjøringer for nynorsk, minne og CPU. Tallene er scoret med `nsb_eval.normalize` v4, som har to profiler: lesbar (fyllord og avbrutte ord fjernet) og ordrett (beholdt). Tabellene står i [BENCHMARK.md](BENCHMARK.md); modellrevisjoner og sjekksummer i [models.json](models.json).
 
 Hva denne målingen dekker og ikke dekker av fase 1, står i [PHASE1_STATUS.md](../../docs/PHASE1_STATUS.md). Den viktigste begrensningen: juridisk diktat og simulerte avhør er ikke spilt inn ennå, så ingen av konklusjonene under er målt på det EVIDA og domstolene faktisk skal bruke.
 
@@ -53,10 +53,39 @@ Det viktigste her: **i samtaletale mister alle modellene hver fjerde til tredje 
 
 Tallfeil på NPSC eval er ikke tatt med: møtet bruker forkortede årstall («tjueseks til tjuefemten» for 2006–2015), som normaliseringen ikke kan tolke entydig.
 
+## Nynorsk dekodet som nynorsk
+
+NB Samtale kjørt på nytt der hver setning dekodes med målformen i fasiten: bokmål som `no`, nynorsk som `nn` (314 av 1 195 setninger er nynorsk).
+
+| Modell | Nynorsk, dekodet som `no` | Nynorsk, dekodet som `nn` | Endring |
+| --- | ---: | ---: | ---: |
+| nb-whisper-large | 44,8 % | **36,8 %** | −8,0 |
+| whisper-large-v3 | 42,5 % | 38,2 % | −4,3 |
+| nb-whisper-large-distil-turbo-beta | 44,0 % | 47,1 % | **+3,1** |
+
+Omtrent en femtedel av nynorskfeilene hos NB-Whisper large skyldtes altså at modellen skrev bokmål. Distil-turbo blir dårligere når den blir bedt om å skrive nynorsk, og bør ikke brukes til nynorsk. Valg av modell avhenger dermed av målform: for nynorsk er NB-Whisper large best av de målte.
+
+## Minne og CPU
+
+Første 100 setninger av NPSC test (11,6 minutter lyd). GPU: RTX 4080, float16. CPU: int8 på samme maskin. GPU-minne er økningen i brukt minne på kortet under kjøringen (andre programmer brukte rundt 4 GB fra før).
+
+| Modell | WER, GPU | WER, CPU | Sanntidsfaktor, GPU | Sanntidsfaktor, CPU | GPU-minne | RAM, GPU-kjøring | RAM, CPU-kjøring |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| nb-whisper-large-distil-turbo-beta | 8,1 % | 8,3 % | 0,027 | 0,64 | 2,7 GB | 1,6 GB | 1,3 GB |
+| nb-whisper-large | 8,7 % | 8,5 % | 0,084 | 0,94 | 4,1 GB | 6,0 GB | 5,9 GB |
+| whisper-large-v3 | 12,7 % | 13,1 % | 0,066 | 0,93 | 4,3 GB | 3,1 GB | 3,0 GB |
+| nb-whisper-small | 12,6 % | 13,5 % | 0,040 | 0,20 | 1,0 GB | 1,1 GB | 1,0 GB |
+| nb-whisper-medium | 14,4 % | – | 0,052 | – | 2,3 GB | 3,1 GB | – |
+
+- int8 på CPU gir samme nøyaktighet som float16 på GPU (innenfor 1 prosentpoeng).
+- På CPU er distil-turbo 1,5 ganger raskere enn sanntid (0,64). Det holder for batch, men gir lite rom for direktediktering på en vanlig bærbar. De store modellene ligger nær sanntid (0,93–0,94) på CPU.
+- NB-Whisper large bruker 6 GB RAM også når den kjører på GPU. Distil-turbo bruker omtrent en firedel av det.
+- Sanntidsfaktor viser behandlingstid for hele setninger, ikke ventetid ved strømming. Det måles i fase 2.
+
 ## Funn
 
 1. **NB-Whisper utelater ord.** På NB Samtale står utelatelser for 17–21 % av ordene hos NB-Whisper, mot 12 % hos Whisper large-v3; i ordrett profil 21–25 % mot 16 %. Det gjelder også setninger uten overlappende tale. Modellene ser ut til å skrive en strammet tekst, i tråd med at de er trent på blant annet NRK-teksting.
-2. **Nynorsk er det svakeste punktet.** På NB Samtale har nynorsk 42–48 % WER mot 24–31 % for bokmål, for alle modellene. Modellene ble kjørt med språk `no` og skriver bokmål; normaliseringen gjør ikke om mellom målformene. Ny måling med nynorsk dekodet som `nn` er klar (`scripts/RUN_PHASE1_CLOSEOUT.cmd`), men ikke kjørt.
+2. **Nynorsk er det svakeste punktet.** Med språk `no` har nynorsk 42–48 % WER mot 24–31 % for bokmål. Dekodet som nynorsk (`nn`) blir NB-Whisper large og Whisper large-v3 klart bedre, men distil-turbo blir dårligere; se egen seksjon under.
 3. **Vestlandet og sørvest er vanskeligst.** Distil-turbo: øst 24,8 %, nord 30,7 %, trøndelag 31,7 %, sørvest 39,1 %, vest 41,2 %. Mønsteret er likt for alle modellene. Overlapp med nynorsk forklarer trolig en del av dette.
 4. **Hallusinasjon i stillhet varierer mye.** Whisper large-v3 og NB-Whisper small skriver tekst i alle 12 stillhetsklipp, distil-turbo i 4, NB-Whisper large i 1. Målingen kjører uten stemmeaktivitetsdeteksjon for å avdekke dette. Hallusinasjon inne i tale (tekst som ikke har støtte i lyden selv om noen snakker) er ikke målt ennå; det krever egne merkede opptak.
 5. **NB-Whisper medium låser seg.** Den gjentar fraser i løkker (8,3 % innsatte ord og 64 tilføyde nektelser på NPSC eval) og er dårligere enn small på to av tre sett. Den bør ikke brukes.
@@ -72,5 +101,6 @@ Tallfeil på NPSC eval er ikke tatt med: møtet bruker forkortede årstall («tj
 - NB-Whisper er trent på Stortinget-tale. Hvis møtene i NPSC-testene inngikk i treningen, er NB-Whisper-tallene på NPSC for optimistiske.
 - Kjøringen brukte kode fra commit `5fb95d5`; scoringen er gjort med senere kode. Selve dekodingen er ikke endret.
 - Stillhetssettet har bare 12 klipp. Andelene er grove.
-- Minnebruk og CPU-ytelse er ikke målt i denne kjøringen; måleverktøyet er lagt til etterpå.
+- Minne og CPU er målt på de første 100 setningene i NPSC test (16. oktober, kveld), ikke hele settet. WER på dette utvalget er lavere enn på hele settet og kan ikke sammenlignes direkte med hovedtabellen.
+- NB-Whisper large gir ikke helt samme tekst fra kjøring til kjøring på GPU: 9 av 881 setninger var ulike mellom to kjøringer med samme innstillinger, som ga 0,5 prosentpoeng forskjell i WER. Whisper large-v3 og distil-turbo ga identisk tekst. Forskjeller under omtrent 0,5 prosentpoeng for NB-Whisper large bør derfor ikke tillegges vekt.
 - Distil-turbo er merket «beta» av Nasjonalbiblioteket.

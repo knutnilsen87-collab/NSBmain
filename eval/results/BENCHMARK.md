@@ -13,6 +13,17 @@
 Tapte negasjoner, feil tall og feil navn: tapte av antall i fasiten. Navn er ord med stor forbokstav i fasiten (grovt mål).
 
 
+## nb_samtale_test_maalform
+
+| Modell | Enhet | WER | Ordrett WER | CER | Innsetting | Utelatelse | Hallusinasjon | Tapte negasjoner | Feil tall | Feil navn | Sanntidsfaktor | Minne (MB) | Klipp (feilet) |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| whisper-large-v3 | cuda/float16 | 27.8 % | 31.0 % | 16.7 % | 2.5 % | 11.9 % | 0.3 % | 74/365 | 18/150 | 208/581 | 0.0655 | 3066.0 RAM / 8275.0 GPU | 1195 (0) |
+| nb-whisper-large | cuda/float16 | 30.0 % | 33.3 % | 23.0 % | 1.0 % | 22.3 % | 0.1 % | 99/365 | 21/150 | 199/581 | 0.0663 | 6051.9 RAM / 8293.0 GPU | 1195 (0) |
+| nb-whisper-large-distil-turbo-beta | cuda/float16 | 30.7 % | 33.9 % | 20.5 % | 1.1 % | 18.3 % | 0.2 % | 90/365 | 32/150 | 239/581 | 0.0299 | 1073.2 RAM / 6358.0 GPU | 1195 (0) |
+
+Tapte negasjoner, feil tall og feil navn: tapte av antall i fasiten. Navn er ord med stor forbokstav i fasiten (grovt mål).
+
+
 ## npsc_eval_20170209
 
 | Modell | Enhet | WER | Ordrett WER | CER | Innsetting | Utelatelse | Hallusinasjon | Tapte negasjoner | Feil tall | Feil navn | Sanntidsfaktor | Minne (MB) | Klipp (feilet) |
@@ -35,6 +46,23 @@ Tapte negasjoner, feil tall og feil navn: tapte av antall i fasiten. Navn er ord
 | whisper-large-v3 | cuda/float16 | 14.4 % | 15.7 % | 6.3 % | 0.9 % | 5.2 % | 0.0 % | 8/112 | 2/53 | 102/203 | 0.1008 | – | 501 (0) |
 | nb-whisper-medium | cuda/float16 | 18.2 % | 19.4 % | 11.6 % | 1.2 % | 9.6 % | 0.2 % | 7/112 | 6/53 | 48/203 | 0.1076 | – | 501 (0) |
 | nb-whisper-small | cuda/float16 | 18.8 % | 19.9 % | 12.0 % | 2.0 % | 8.9 % | 0.4 % | 8/112 | 6/53 | 42/203 | 0.114 | – | 501 (0) |
+
+Tapte negasjoner, feil tall og feil navn: tapte av antall i fasiten. Navn er ord med stor forbokstav i fasiten (grovt mål).
+
+
+## npsc_test_20170207_100
+
+| Modell | Enhet | WER | Ordrett WER | CER | Innsetting | Utelatelse | Hallusinasjon | Tapte negasjoner | Feil tall | Feil navn | Sanntidsfaktor | Minne (MB) | Klipp (feilet) |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| nb-whisper-large-distil-turbo-beta | cuda/float16 | 8.1 % | 8.5 % | 4.0 % | 0.3 % | 3.0 % | 0.0 % | 2/29 | 0/7 | 14/66 | 0.0266 | 1561.0 RAM / 6558.0 GPU | 100 (0) |
+| nb-whisper-large-distil-turbo-beta | cpu/int8 | 8.3 % | 8.7 % | 4.1 % | 0.4 % | 3.1 % | 0.0 % | 2/29 | 0/7 | 15/66 | 0.6413 | 1263.5 RAM | 100 (0) |
+| nb-whisper-large | cpu/int8 | 8.5 % | 8.9 % | 4.7 % | 0.4 % | 4.0 % | 0.0 % | 3/29 | 0/7 | 11/66 | 0.9372 | 5924.8 RAM | 100 (0) |
+| nb-whisper-large | cuda/float16 | 8.7 % | 9.1 % | 4.8 % | 0.5 % | 4.1 % | 0.0 % | 3/29 | 0/7 | 11/66 | 0.0844 | 6044.2 RAM / 8219.0 GPU | 100 (0) |
+| nb-whisper-small | cuda/float16 | 12.6 % | 13.0 % | 7.7 % | 1.0 % | 6.0 % | 0.0 % | 3/29 | 2/7 | 14/66 | 0.0395 | 1060.3 RAM / 5120.0 GPU | 100 (0) |
+| whisper-large-v3 | cuda/float16 | 12.7 % | 13.1 % | 4.8 % | 1.2 % | 3.0 % | 0.0 % | 3/29 | 0/7 | 35/66 | 0.0656 | 3061.8 RAM / 8544.0 GPU | 100 (0) |
+| whisper-large-v3 | cpu/int8 | 13.1 % | 13.5 % | 4.9 % | 1.3 % | 3.1 % | 0.0 % | 3/29 | 0/7 | 38/66 | 0.9338 | 2950.5 RAM | 100 (0) |
+| nb-whisper-small | cpu/int8 | 13.5 % | 13.9 % | 8.6 % | 0.5 % | 7.3 % | 0.0 % | 1/29 | 2/7 | 17/66 | 0.1992 | 954.1 RAM | 100 (0) |
+| nb-whisper-medium | cuda/float16 | 14.4 % | 14.8 % | 9.3 % | 3.0 % | 5.0 % | 1.0 % | 2/29 | 2/7 | 18/66 | 0.0515 | 3075.2 RAM / 6453.0 GPU | 100 (0) |
 
 Tapte negasjoner, feil tall og feil navn: tapte av antall i fasiten. Navn er ord med stor forbokstav i fasiten (grovt mål).
 

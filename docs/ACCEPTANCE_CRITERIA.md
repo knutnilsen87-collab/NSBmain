@@ -31,8 +31,9 @@ Målt på låst test. Alle krav må være oppfylt.
 | Feil tall og lovhenvisninger, juridisk diktat | ≤ 2 % | Ikke målt | Paragrafnummer og beløp må stemme |
 | Tekst i stillhet, med stemmeaktivitetsdeteksjon | 0 av 12 | 4 av 12 uten deteksjon | Ingenting skal skrives når ingen snakker |
 | WER, NPSC test | ≤ 15 % | 12,5 % | Formell norsk tale, kontroll mot tilbakegang |
-| Sanntidsfaktor, kundens maskinvare | ≤ 0,3 | 0,03 på RTX 4080 | Teksten må komme mens advokaten snakker |
-| Minne | Innenfor kundens maskin | Ikke målt | Kjører lokalt hos advokaten |
+| WER, nynorsk (NB Samtale, dekodet som `nn`) | Settes når nynorsk-diktat er målt | 47,1 % | Distil-turbo blir dårligere med `nn`; nynorskbrukere kan trenge NB-Whisper large (36,8 %) |
+| Sanntidsfaktor, kundens maskinvare | ≤ 0,3 | 0,027 på RTX 4080; 0,64 på CPU (int8) | Teksten må komme mens advokaten snakker. Kravet nås ikke på CPU i dag |
+| Minne | Innenfor kundens maskin | 2,7 GB GPU-minne, 1,3–1,6 GB RAM | Kjører lokalt hos advokaten |
 
 Høy behandlingshastighet viser at modellen klarer å holde følge, men dokumenterer ikke god direktediktering. Ventetid fra ord til tekst og hvor ofte teksten endrer seg underveis, måles når strømming er bygget (fase 2).
 

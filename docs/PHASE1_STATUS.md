@@ -1,6 +1,6 @@
 # Fase 1: status krav for krav
 
-Oppdatert 2026-10-16. Fase 1 er **ikke lukket**. Modellsammenligningen på åpne testsett er gjort og etterprøvbar, men flere krav venter på opptak eller en kjøring på GPU-maskinen.
+Oppdatert 2026-10-17. Fase 1 er **ikke lukket**. Alle målinger som kan gjøres med åpne data, er gjort og etterprøvbare. Det som gjenstår, krever opptak (juridisk diktat, simulerte avhør) og en beslutning om godkjenningskravene.
 
 Statusverdier: **verifisert** (gjort og kontrollert, med bevis), **venter på kjøring** (klart, men må kjøres på RTX 4080-maskinen), **blokkert** (krever opptak eller en beslutning), **utsatt** (flyttet til senere fase, med begrunnelse), **endret** (kravet er tatt ut eller erstattet).
 
@@ -18,10 +18,10 @@ Statusverdier: **verifisert** (gjort og kontrollert, med bevis), **venter på kj
 | Hallusinasjon: tekst uten støtte i lyden | Delvis | Stillhet (12 klipp), gjentakelsesløkker og overlange svar måles. Hallusinasjon inne i tale måles ikke; krever merkede opptak og er flyttet til fase 3 |
 | Utelatelser | Verifisert | Lesbar og ordrett profil |
 | Sanntidsfaktor på GPU | Verifisert | Alle 20 kjøringer |
-| Minnebruk | Venter på kjøring | `nsb_eval.resources` måler høyeste RAM og GPU-minne fra nå av. Ikke målt i første kjøring |
+| Minnebruk | Verifisert | Målt 16. oktober på 100 setninger, GPU og CPU: distil-turbo 2,7 GB GPU-minne og 1,3–1,6 GB RAM, NB-Whisper large 4,1 GB og 6 GB. Se [ANALYSIS.md](../eval/results/ANALYSIS.md) |
 | Fem modeller på RTX 4080 | Verifisert | 20 kjøringer, 0 feilede setninger, modellrevisjon og sha256 registrert |
-| Samme modeller på CPU | Venter på kjøring | `scripts/RUN_PHASE1_CLOSEOUT.cmd` steg 3: fire modeller, int8, 100 setninger |
-| Nynorsk dekodet som nynorsk | Venter på kjøring | `RUN_PHASE1_CLOSEOUT.cmd` steg 1 (`--language-from-meta standard`) |
+| Samme modeller på CPU | Verifisert | Fire modeller, int8, 100 setninger. Samme nøyaktighet som GPU; sanntidsfaktor 0,20 (small) til 0,94 (large). Medium ikke kjørt på CPU (frarådet) |
+| Nynorsk dekodet som nynorsk | Verifisert | Tre modeller. NB-Whisper large 44,8 → 36,8 % WER på nynorsk, large-v3 42,5 → 38,2 %, distil-turbo 44,0 → 47,1 % (dårligere) |
 | Rettelser i treningskoden | Verifisert | Røyktester med liten modell og ekte Whisper-tokenizer: 33 bestått 2026-10-16. Egen CI-jobb (`train-smoke`) kjører dem ved hver endring og feiler hvis de hoppes over |
 | Åpen publisering av resultater | Verifisert | Kode, testsett og resultater i det offentlige repoet. Resultatsiden er delt med lenke (alle med lenken kan åpne den), oppdatert med v4-tallene |
 | Modell for fase 2 (diktering) | Foreløpig | Kandidat: NB-Whisper distil-turbo. Endelig valg etter måling på juridisk diktat mot [godkjenningskravene](ACCEPTANCE_CRITERIA.md) |
@@ -31,7 +31,7 @@ Statusverdier: **verifisert** (gjort og kontrollert, med bevis), **venter på kj
 
 ## Hva som lukker fase 1
 
-1. Kjør `scripts\RUN_PHASE1_CLOSEOUT.cmd` på RTX 4080-maskinen (omtrent 1,5 time). Lukker CPU, minne og nynorsk.
+1. ~~Kjør `scripts\RUN_PHASE1_CLOSEOUT.cmd`~~ Gjort 16. oktober: CPU, minne og nynorsk er målt.
 2. Spill inn juridisk diktat med minst tre talere, og ett sett simulerte avhør med to personer. Kontroller fasitene.
 3. Godkjenn eller endre tallene i godkjenningskravene.
 4. Mål kandidaten på juridisk diktat og avhør. Først da kan modellvalget for fase 2 bekreftes.
