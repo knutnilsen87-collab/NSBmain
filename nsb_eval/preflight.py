@@ -11,9 +11,12 @@ import argparse
 from pathlib import Path
 
 from .manifest import load_manifest
+from .recorded import RECORDED_SETS, combined_manifest
 
 
 def manifest_for(root: Path, name: str) -> tuple[Path, Path]:
+    if name in RECORDED_SETS:
+        return combined_manifest(root, name), root
     if name == "silence_v1":
         base = root / "eval" / "testsets" / "silence_v1"
         return base / "manifest.jsonl", base

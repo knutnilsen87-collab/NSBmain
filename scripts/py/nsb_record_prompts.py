@@ -72,9 +72,14 @@ def main(argv=None) -> int:
             if not started or item_id in done:
                 continue
             print(f"\n[{i}/{len(prompts)}] {p['id']} ({p['category']})\nSI: {p['say']}")
-            input("Enter for å starte opptak ...")
-            print("Tar opp. Enter for å stoppe.")
-            audio = record_until_enter(args.samplerate, args.channels, args.device)
+            while True:
+                input("Enter for å starte opptak ...")
+                print("Tar opp. Enter for å stoppe.")
+                audio = record_until_enter(args.samplerate, args.channels, args.device)
+                secs = len(audio) / args.samplerate
+                answer = input(f"{secs:.1f} s. Sa du setningen nøyaktig slik den står? Enter = ja, r = ta opp på nytt: ")
+                if answer.strip().lower() != "r":
+                    break
             wav = out_dir / f"{p['id']}.wav"
             sf.write(str(wav), audio, args.samplerate)
             row = {

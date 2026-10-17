@@ -31,6 +31,8 @@ param(
     [string]$TestsetSuffix = '',
     # Dekod hver setning med målformen i manifestet (bm -> no, nn -> nn).
     [switch]$LanguageFromMeta,
+    # Slå på stemmeaktivitetsdeteksjon (VAD) i dekodingen.
+    [switch]$Vad,
     [switch]$SkipSetup,
     # For testing: bruk en eksisterende Python og en ferdig models.json (hopper over nedlasting).
     [string]$PythonExe = '',
@@ -122,15 +124,25 @@ if ($ModelsJson) {
 if (-not (Test-Path $registryPath)) { Stop-WithError 'models.json mangler etter nedlasting' }
 $registry = Get-Content $registryPath -Raw | ConvertFrom-Json
 
-# ---------- 3. Stillhetssett
+# ---------- 3. Stillhetssett og egne opptak
 & $Py -m nsb_eval.silence --out-dir eval/testsets/silence_v1 *>> $Log
 if ($LASTEXITCODE -ne 0) { Stop-WithError 'Kunne ikke lage stillhetssettet' }
+foreach ($ts in @($Testsets | Where-Object { $_ -in @('legal_dictation_v1', 'simulated_interview_v1') })) {
+    & $Py -m nsb_eval.recorded --root $Root --set $ts *>> $Log
+    if ($LASTEXITCODE -ne 0) { Stop-WithError "Ingen (verifiserte) opptak i eval/recording/$ts" }
+}
 $preflightArgs = @(); foreach ($ts in $Testsets) { $preflightArgs += @('--testset', $ts) }
 if ($Limit -gt 0) { $preflightArgs += @('--limit', "$Limit") }
 & $Py -m nsb_eval.preflight --root $Root @preflightArgs *>> $Log
 if ($LASTEXITCODE -ne 0) { Stop-WithError 'Lydfiler mangler for et eller flere testsett (se RUN.log, linjer med [mangler])' }
 
 function Get-TestsetArgs([string]$Name) {
+    if ($Name -eq 'legal_dictation_v1') {
+        return @('--manifest', 'eval/recording/legal_dictation_v1/all.jsonl', '--audio-root', $Root, '--group-by', 'speaker_id', '--group-by', 'category')
+    }
+    if ($Name -eq 'simulated_interview_v1') {
+        return @('--manifest', 'eval/recording/simulated_interview_v1/all.jsonl', '--audio-root', $Root, '--group-by', 'group')
+    }
     if ($Name -eq 'silence_v1') {
         return @('--manifest', 'eval/testsets/silence_v1/manifest.jsonl', '--audio-root', 'eval/testsets/silence_v1')
     }
@@ -188,6 +200,7 @@ foreach ($m in $Models) {
         if ($entry.revision) { $limitArgs += @('--model-revision', "$($entry.revision)") }
         if ($entry.model_sha256) { $limitArgs += @('--model-sha256', "$($entry.model_sha256)") }
         if ($LanguageFromMeta) { $limitArgs += @('--language-from-meta', 'standard') }
+        if ($Vad) { $limitArgs += @('--vad') }
         & $Py -m nsb_eval.runner @(Get-TestsetArgs $ts) --testset $tsLabel --backend faster-whisper --model $entry.path --label $m `
             --device $Device --compute-type $ComputeType --out-dir $out @limitArgs *>> (Join-Path $out 'run.log')
         $code = $LASTEXITCODE
