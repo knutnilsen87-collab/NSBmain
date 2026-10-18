@@ -1,0 +1,129 @@
+import numpy as np
+
+from nsb_engine.streaming import SAMPLE_RATE, StreamingRecognizer, Word, common_prefix
+
+# Talen i strømmen: (ord, start, slutt) i sekunder.
+SCRIPT = [
+    ("Tiltalte", 0.2, 0.8), ("nektet", 0.9, 1.4), ("straffskyld", 1.5, 2.3), ("for", 2.4, 2.6),
+    ("forholdet", 2.7, 3.4), ("i", 3.5, 3.6), ("tiltalebeslutningen.", 3.7, 4.8),
+    # pause 4.8–7.0
+    ("Vitnet", 7.0, 7.5), ("forklarte", 7.6, 8.2), ("seg.", 8.3, 8.8),
+]
+
+
+class ScriptedBackend:
+    """Gir ordene som er ferdig uttalt i bufferen. Det siste ordet som akkurat
+    er påbegynt, blir gjettet feil (som en ekte modell midt i et ord)."""
+
+    def __init__(self, script=SCRIPT):
+        self.script = script
+        self.offset = 0.0  # settes av testen via recognizer.buffer_offset
+        self.calls = 0
+        self.prompts = []
+
+    def transcribe(self, audio, prompt=None, hotwords=None):
+        self.calls += 1
+        self.prompts.append((prompt, hotwords))
+        start = self.rec.buffer_offset
+        end = start + len(audio) / SAMPLE_RATE
+        out = []
+        for text, s, e in self.script:
+            if s >= start - 0.05 and e <= end:
+                out.append(Word(text, s - start, e - start, 0.9))
+            elif s >= start and s < end < e:
+                out.append(Word(text[:2] + "x", s - start, end - start, 0.3))  # halvt ord, feil
+        return out
+
+
+def script_detector(rec):
+    def detect(audio):
+        start = rec.buffer_offset
+        end = start + len(audio) / SAMPLE_RATE
+        spans = []
+        for _, s, e in SCRIPT:
+            if e > start and s < end:
+                spans.append((max(s, start) - start, min(e, end) - start))
+        return spans
+
+    return detect
+
+
+def run(rec, seconds, chunk=0.25):
+    updates = []
+    n = int(round(seconds / chunk))
+    for _ in range(n):
+        rec.insert_audio(np.zeros(int(chunk * SAMPLE_RATE), dtype=np.float32))
+        updates.append(rec.process())
+    updates.append(rec.finish())
+    return updates
+
+
+def make(**kw):
+    backend = ScriptedBackend()
+    rec = StreamingRecognizer(backend, **kw)
+    backend.rec = rec
+    return rec, backend
+
+
+def test_all_words_committed_once_in_order():
+    rec, _ = make(min_step=0.5)
+    run(rec, 9.5)
+    assert [w.text for w in rec.committed] == [t for t, _, _ in SCRIPT]
+
+
+def test_half_words_are_never_committed():
+    rec, _ = make(min_step=0.5)
+    updates = run(rec, 9.5)
+    committed = [w.text for u in updates for w in u.committed]
+    assert not any(t.endswith("x") for t in committed)
+    # men de vises som foreløpige underveis
+    assert any(w.text.endswith("x") for u in updates for w in u.tentative)
+
+
+def test_words_need_two_agreeing_decodings():
+    rec, _ = make(min_step=0.5)
+    rec.insert_audio(np.zeros(int(1.5 * SAMPLE_RATE), dtype=np.float32))
+    first = rec.process()
+    assert first.committed == [] and [w.text for w in first.tentative][:2] == ["Tiltalte", "nektet"]
+    rec.insert_audio(np.zeros(int(0.5 * SAMPLE_RATE), dtype=np.float32))
+    second = rec.process()
+    assert [w.text for w in second.committed] == ["Tiltalte", "nektet"]
+
+
+def test_pause_ends_utterance_with_vad():
+    rec, backend = make(min_step=0.5, endpoint_silence=0.8)
+    rec.detector = script_detector(rec)
+    updates = run(rec, 9.5)
+    endpoints = [u for u in updates[:-1] if u.endpoint]
+    assert endpoints, "pausen etter første setning skal avslutte ytringen"
+    first = endpoints[0]
+    assert first.audio_end < 7.0  # før neste setning begynner
+    assert rec.committed[6].text == "tiltalebeslutningen."
+    assert [w.text for w in rec.committed] == [t for t, _, _ in SCRIPT]
+
+
+def test_silence_is_not_decoded_with_vad():
+    rec, backend = make(min_step=0.5)
+    rec.detector = lambda audio: []
+    run(rec, 5.0)
+    assert backend.calls == 0 and rec.committed == []
+
+
+def test_long_buffer_is_trimmed_without_losing_words():
+    rec, _ = make(min_step=0.5, max_buffer=3.0, trim_to=2.0)
+    run(rec, 9.5)
+    assert len(rec.buffer) == 0
+    assert [w.text for w in rec.committed] == [t for t, _, _ in SCRIPT]
+
+
+def test_committed_text_is_used_as_prompt_and_hotwords_are_passed():
+    rec, backend = make(min_step=0.5, hotwords="Bjørdal Giske")
+    run(rec, 4.0)
+    assert backend.prompts[0] == (None, "Bjørdal Giske")
+    assert any(p and p.startswith("Tiltalte") for p, _ in backend.prompts)
+
+
+def test_common_prefix_ignores_case_and_punctuation():
+    a = [Word("Han", 0, 1), Word("nektet,", 1, 2), Word("ikke", 2, 3)]
+    b = [Word("han", 0, 1), Word("nektet", 1, 2), Word("ikkje", 2, 3)]
+    assert common_prefix(a, b) == 2

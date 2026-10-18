@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="nb">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NSB diktering</title>
+<style>
+  :root { --bg:#f7f6f2; --ink:#1c1b19; --muted:#7a766d; --line:#dedad0; --accent:#1f5f4a; --warn:#b5532b; --panel:#fff; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#161614; --ink:#ecebe6; --muted:#9a968c; --line:#33312c; --accent:#6fc2a2; --warn:#e68a5e; --panel:#1f1e1b; } }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.55 Georgia, "Iowan Old Style", serif; }
+  main { max-width: 860px; margin: 0 auto; padding: 32px 16px 64px; }
+  header { display:flex; justify-content:space-between; align-items:baseline; gap:16px; flex-wrap:wrap; border-bottom:1px solid var(--line); padding-bottom:12px; }
+  h1 { font-size: 22px; margin:0; font-weight: 600; letter-spacing: .01em; }
+  .meta { font: 13px/1.4 system-ui, sans-serif; color: var(--muted); }
+  .controls { display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin:20px 0; font: 14px system-ui, sans-serif; }
+  button { font: 600 14px system-ui, sans-serif; padding: 10px 18px; border-radius: 6px; border: 1px solid var(--accent); background: var(--accent); color: var(--bg); cursor: pointer; }
+  button.stop { background: transparent; color: var(--warn); border-color: var(--warn); }
+  input { font: 14px system-ui, sans-serif; padding: 9px 10px; border:1px solid var(--line); border-radius:6px; background:var(--panel); color:var(--ink); flex:1; min-width: 220px; }
+  .label { font: 600 12px system-ui, sans-serif; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 28px 0 8px; }
+  .page { background: var(--panel); border:1px solid var(--line); border-radius: 8px; padding: 20px 22px; min-height: 160px; white-space: pre-wrap; }
+  .tent { color: var(--muted); }
+  .unc { text-decoration: underline wavy var(--warn); text-underline-offset: 3px; }
+  .status { font: 13px system-ui, sans-serif; color: var(--muted); }
+  .dot { display:inline-block; width:8px; height:8px; border-radius:50%; background: var(--muted); margin-right:6px; }
+  .on .dot { background: var(--warn); }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Diktering</h1>
+    <span class="meta" id="model">kobler til …</span>
+  </header>
+  <div class="controls">
+    <button id="go">Start diktering</button>
+    <input id="hot" placeholder="Navn og fagord fra saken, for eksempel: Bjørdal, Giske, MED-OTIR">
+    <span class="status" id="status"><span class="dot"></span>stoppet</span>
+  </div>
+  <div class="label">Tekst</div>
+  <div class="page" id="out"></div>
+  <div class="label">Ord med lav sikkerhet er understreket</div>
+  <div class="page" id="words"></div>
+  <p class="meta">Lyden går bare til tjenesten på denne maskinen (127.0.0.1) og lagres ikke. Si «punktum», «komma», «ny linje» eller «nytt avsnitt» for tegn og linjeskift.</p>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+let ws, ctx, src, node, stream, running = false, committed = [], text = "", tentative = [];
+
+fetch("/v1/health").then(r => r.json()).then(h => $("model").textContent = `${h.model} · ${h.device} · v${h.version}`)
+  .catch(() => $("model").textContent = "tjenesten svarer ikke");
+
+const esc = s => s.replace(/[&<>]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+function render() {
+  $("out").innerHTML = esc(text) + (tentative.length ? ' <span class="tent">' + esc(tentative.map(w => w.text).join(" ")) + '</span>' : "");
+  $("words").innerHTML = committed.map(w => w.uncertain ? `<span class="unc" title="${(w.probability*100).toFixed(0)} %">${esc(w.text)}</span>` : esc(w.text)).join(" ")
+    + (tentative.length ? ' <span class="tent">' + tentative.map(w => esc(w.text)).join(" ") + '</span>' : "");
+}
+
+const worklet = `
+class Pcm extends AudioWorkletProcessor {
+  constructor() { super(); this.buf = []; this.n = 0; }
+  process(inputs) {
+    const ch = inputs[0][0];
+    if (ch) { this.buf.push(new Float32Array(ch)); this.n += ch.length; }
+    if (this.n >= 4000) {  // 0,25 s ved 16 kHz
+      const out = new Int16Array(this.n); let o = 0;
+      for (const b of this.buf) for (let i = 0; i < b.length; i++) { const s = Math.max(-1, Math.min(1, b[i])); out[o++] = s < 0 ? s * 32768 : s * 32767; }
+      this.port.postMessage(out.buffer, [out.buffer]); this.buf = []; this.n = 0;
+    }
+    return true;
+  }
+}
+registerProcessor("pcm", Pcm);`;
+
+async function start() {
+  committed = []; text = ""; tentative = []; render();
+  stream = await navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, echoCancellation: false, noiseSuppression: false, autoGainControl: true } });
+  ctx = new AudioContext({ sampleRate: 16000 });
+  await ctx.audioWorklet.addModule(URL.createObjectURL(new Blob([worklet], { type: "application/javascript" })));
+  src = ctx.createMediaStreamSource(stream);
+  node = new AudioWorkletNode(ctx, "pcm");
+  ws = new WebSocket(`ws://${location.host}/v1/stream`);
+  ws.binaryType = "arraybuffer";
+  ws.onopen = () => {
+    ws.send(JSON.stringify({ type: "start", hotwords: $("hot").value.trim(), format: "legal" }));
+    node.port.onmessage = e => { if (ws.readyState === 1) ws.send(e.data); };
+    src.connect(node);
+  };
+  ws.onmessage = e => {
+    const m = JSON.parse(e.data);
+    if (m.type === "update" || m.type === "final") {
+      committed = committed.concat(m.committed); text = m.text; tentative = m.tentative; render();
+    }
+    if (m.type === "final") ws.close();
+  };
+  ws.onclose = () => setRunning(false);
+  setRunning(true);
+}
+
+function stop() {
+  try { src && src.disconnect(); node && node.disconnect(); stream && stream.getTracks().forEach(t => t.stop()); ctx && ctx.close(); } catch (e) {}
+  if (ws && ws.readyState === 1) ws.send(JSON.stringify({ type: "end" }));
+  $("status").innerHTML = '<span class="dot"></span>avslutter …';
+}
+
+function setRunning(on) {
+  running = on;
+  $("go").textContent = on ? "Stopp" : "Start diktering";
+  $("go").className = on ? "stop" : "";
+  $("status").className = "status" + (on ? " on" : "");
+  $("status").innerHTML = '<span class="dot"></span>' + (on ? "lytter" : "stoppet");
+}
+
+$("go").onclick = () => running ? stop() : start().catch(err => { $("status").textContent = "mikrofonen kunne ikke startes: " + err.message; });
+</script>
+</body>
+</html>

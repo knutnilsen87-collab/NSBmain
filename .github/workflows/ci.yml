@@ -16,8 +16,8 @@ jobs:
         with:
           python-version: "3.11"
       - run: python -m pip install --upgrade pip
-      - run: python -m pip install -e ".[dev]" ruff==0.15.20
-      - run: ruff check nsb_eval tests scripts/build_testsets.py scripts/download_models.py scripts/py/nsb_record_interview.py src/python/nsb_train_utils.py src/python/split_by_group.py
+      - run: python -m pip install -e ".[dev,engine]" ruff==0.15.20
+      - run: ruff check nsb_eval nsb_engine tests scripts/build_testsets.py scripts/download_models.py scripts/py/nsb_record_interview.py src/python/nsb_train_utils.py src/python/split_by_group.py
       - run: python -m pytest
       - name: PowerShell-skript kan parses
         shell: pwsh
@@ -29,6 +29,29 @@ jobs:
             if ($e) { $bad++; $e | ForEach-Object { Write-Host "$($f.Name):$($_.Extent.StartLineNumber) $($_.Message)" } }
           }
           if ($bad) { exit 1 }
+
+  engine-smoke:
+    name: Talemotor med ekte modell (Whisper tiny, CPU)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install --upgrade pip
+      - run: sudo apt-get update -q && sudo apt-get install -y -q espeak-ng
+      - run: python -m pip install -e ".[dev,engine]" huggingface_hub
+      - name: Hent Whisper tiny (CTranslate2)
+        run: python -c "from huggingface_hub import snapshot_download; snapshot_download('Systran/faster-whisper-tiny', local_dir='tiny')"
+      - run: python -m pytest tests/engine/test_engine_smoke.py -v -rs
+        env:
+          NSB_SMOKE_MODEL: tiny
+      - name: Røyktesten må faktisk ha kjørt
+        env:
+          NSB_SMOKE_MODEL: tiny
+        run: |
+          python -m pytest tests/engine/test_engine_smoke.py -q -rs | tee smoke.txt
+          if grep -q skipped smoke.txt; then echo "Røyktesten ble hoppet over"; exit 1; fi
 
   train-smoke:
     name: Treningsskript (røyktest med liten modell)
