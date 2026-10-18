@@ -1,6 +1,6 @@
 # Fase 1: status krav for krav
 
-Oppdatert 2026-10-17. Fase 1 er **ikke lukket**. Alle målinger som kan gjøres med åpne data, er gjort og etterprøvbare. Det som gjenstår, krever opptak (juridisk diktat, simulerte avhør) og en beslutning om godkjenningskravene.
+Oppdatert 2026-10-18. Fase 1 er **ikke lukket**. Alle målinger som kan gjøres med åpne data, er gjort og etterprøvbare. Det som gjenstår, krever opptak (juridisk diktat, simulerte avhør) og en beslutning om godkjenningskravene.
 
 Statusverdier: **verifisert** (gjort og kontrollert, med bevis), **venter på kjøring** (klart, men må kjøres på RTX 4080-maskinen), **blokkert** (krever opptak eller en beslutning), **utsatt** (flyttet til senere fase, med begrunnelse), **endret** (kravet er tatt ut eller erstattet).
 
@@ -16,7 +16,7 @@ Statusverdier: **verifisert** (gjort og kontrollert, med bevis), **venter på kj
 | Egen profil for ordrett tekst | Verifisert | `normalize(..., "ordrett")` beholder fyllord og avbrutte ord. Rapportert som «Ordrett WER» |
 | Meningsbærende feil (nektelser, tall, navn) | Verifisert, med forbehold | `nsb_eval.critical`. Navn er et grovt mål (stor forbokstav). Tall på NPSC eval er ikke pålitelige på grunn av forkortede årstall |
 | Hallusinasjon: tekst uten støtte i lyden | Delvis | Stillhet (12 klipp), gjentakelsesløkker og overlange svar måles. Hallusinasjon inne i tale måles ikke; krever merkede opptak og er flyttet til fase 3 |
-| Tekst i stillhet med stemmeaktivitetsdeteksjon (VAD) | Venter på kjøring | `scripts\RUN_VAD_CHECK.cmd`: stillhet, NPSC test og NB Samtale med VAD, for å se både om oppdiktet tekst forsvinner og om ekte ord går tapt |
+| Tekst i stillhet med stemmeaktivitetsdeteksjon (VAD) | Verifisert | Målt 18. oktober: 0 av 12 stillhetsklipp for alle fem modeller. I tale ingen målbar forskjell for distil-turbo (NPSC og NB Samtale); NB-Whisper large +0,6 pp på samtale. Se [ANALYSIS.md](../eval/results/ANALYSIS.md) |
 | Utelatelser | Verifisert | Lesbar og ordrett profil |
 | Sanntidsfaktor på GPU | Verifisert | Alle 20 kjøringer |
 | Minnebruk | Verifisert | Målt 16. oktober på 100 setninger, GPU og CPU: distil-turbo 2,7 GB GPU-minne og 1,3–1,6 GB RAM, NB-Whisper large 4,1 GB og 6 GB. Se [ANALYSIS.md](../eval/results/ANALYSIS.md) |
@@ -33,7 +33,7 @@ Statusverdier: **verifisert** (gjort og kontrollert, med bevis), **venter på kj
 ## Hva som lukker fase 1
 
 1. ~~Kjør `scripts\RUN_PHASE1_CLOSEOUT.cmd`~~ Gjort 16. oktober: CPU, minne og nynorsk er målt.
-2. Kjør `scripts\RUN_VAD_CHECK.cmd` (omtrent 25 minutter): måler kravet om tekst i stillhet med stemmeaktivitetsdeteksjon, og om deteksjonen fjerner ord i tale.
+2. ~~Kjør `scripts\RUN_VAD_CHECK.cmd`~~ Gjort 18. oktober: ingen tekst i stillhet med deteksjon, og ingen målbar ordtap for distil-turbo.
 3. Spill inn juridisk diktat med minst tre talere: `scripts\RECORD_DICTATION.cmd`, én gang per taler (omtrent 15 minutter hver).
 4. Spill inn simulerte avhør med to personer: `scripts\RECORD_INTERVIEW.cmd`. Kontroller fasitene og sett `verified: true`.
 5. Godkjenn eller endre tallene i godkjenningskravene.
