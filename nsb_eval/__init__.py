@@ -9,6 +9,7 @@ Moduler:
 - ``runner``: kjører én modell mot ett testsett
 - ``silence``: lager stillhet- og støysettet
 - ``report``: samler resultater til én tabell
+- ``dialect_report``: resultater per dialekt (eller annet metadatafelt)
 """
 
 __version__ = "1.0.0"

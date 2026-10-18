@@ -2,17 +2,17 @@
 
 Norsk talegjenkjenning med etterprøvbar kvalitet: en fast, åpen målestokk for norske talemodeller, et pilot-API for transkribering og verktøy for å trene og tilpasse NB-Whisper.
 
-Status oktober 2026: fase 0 (opprydding) er ferdig. Fase 1 (målestokk) er delvis ferdig; se [status krav for krav](docs/PHASE1_STATUS.md). Første måling er kjørt 2026-10-16: fem modeller på fire faste testsett, se [analysen](eval/results/ANALYSIS.md) og [tabellene](eval/results/BENCHMARK.md). NB-Whisper large distil-turbo er kandidat for diktering, men er ikke målt på juridisk diktat ennå. Godkjenningskravene står i [ACCEPTANCE_CRITERIA.md](docs/ACCEPTANCE_CRITERIA.md) (forslag).
+Status oktober 2026: fase 0 (opprydding) er ferdig. Fase 1 (målestokk) er delvis ferdig; se [status krav for krav](docs/PHASE1_STATUS.md). Første måling er kjørt 2026-10-16: fem modeller på fire faste testsett, se [analysen](eval/results/ANALYSIS.md) og [tabellene](eval/results/BENCHMARK.md), og [resultatene per dialekt](eval/results/DIALECT.md). NB-Whisper large distil-turbo er kandidat for diktering, men er ikke målt på juridisk diktat ennå. Godkjenningskravene står i [ACCEPTANCE_CRITERIA.md](docs/ACCEPTANCE_CRITERIA.md) (forslag).
 
 ## Innhold
 
 | Mappe | Hva |
 | --- | --- |
-| `nsb_eval/` | Målestokken: norsk normalisering, WER/CER, hallusinasjonsmål, kjører, forhåndssjekk, omscoring, rapport og parvis sammenligning (`compare`) |
+| `nsb_eval/` | Målestokken: norsk normalisering, WER/CER, hallusinasjonsmål, kjører, forhåndssjekk, omscoring, rapport, parvis sammenligning (`compare`) og resultater per dialekt (`dialect_report`) |
 | `eval/testsets/` | Faste testsett (NPSC, NB Samtale), låst med sjekksum |
 | `eval/recording/` | Innspillingssett for juridisk diktering |
 | `apps/pilot-asr-api/` | FastAPI-tjeneste for transkribering (mock eller faster-whisper), med Dockerfile |
-| `src/python/` | Dataflyt og trening: `train_whisper_iterable.py`, `split_by_group.py`, `nsb_train_utils.py` |
+| `src/python/` | Dataflyt og trening: `train_whisper_iterable.py`, `split_by_group.py`, `nsb_train_utils.py`, `pseudo_label.py` (treningsfasit for dialektlyd uten transkripsjon, se [PSEUDO_LABELING.md](docs/PSEUDO_LABELING.md)) |
 | `scripts/` | `run_benchmark.ps1`, `download_models.py`, `build_testsets.py`, `rotate_signing_key.ps1`, opptaksverktøy |
 | `docs/` | [Metode](docs/BENCHMARK_METHOD.md), [dataregister](docs/DATA_REGISTER.md), [sikkerhet](docs/SECURITY.md) |
 
