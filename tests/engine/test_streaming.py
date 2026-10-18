@@ -153,3 +153,17 @@ def test_overlapping_guesses_are_not_committed_twice():
     backend.rec = rec
     run(rec, 9.5)
     assert "gjetning" not in [w.text for w in rec.committed]
+
+
+def test_new_words_found_by_text_when_times_are_wrong():
+    from nsb_engine.streaming import _prefix_alignment
+
+    rec, _ = make()
+    rec.committed = [Word("pleaded", 1.7, 2.3), Word("guilty.", 2.3, 3.3)]
+    rec.buffer_offset = 0.5
+    # Ny dekoding gjentar de ferdige ordene, men gir «The court» tider før 3,3 s.
+    hyp = [Word("The", 0.5, 1.2), Word("defendant", 1.2, 1.7), Word("pleaded", 1.7, 2.2), Word("guilty.", 2.2, 2.6),
+           Word("The", 2.6, 2.8), Word("court", 2.8, 3.0), Word("finds", 3.0, 3.5)]
+    assert [w.text for w in rec._new_words(hyp)] == ["The", "court", "finds"]
+    assert _prefix_alignment(["a", "b"], ["x", "a", "b", "c"]) == (3, 0)
+    assert _prefix_alignment(["a", "b"], ["a", "q", "c"]) == (2, 1)

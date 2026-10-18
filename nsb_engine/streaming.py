@@ -100,6 +100,23 @@ def common_prefix(a: Sequence[Word], b: Sequence[Word]) -> int:
     return n
 
 
+def _prefix_alignment(done: list[str], hyp: list[str]) -> tuple[int, int]:
+    """Finner hvor de ferdige ordene slutter i hypotesen (Levenshtein der
+    hypotesen kan ha ekstra ord foran og bak). Gir (antall hypoteseord til og
+    med de ferdige ordene, kostnad). Ved likhet velges det seneste stedet, så
+    en ny gjetning på det siste ferdige ordet ikke regnes som et nytt ord."""
+    n, m = len(done), len(hyp)
+    prev = [0] * (m + 1)
+    for i in range(1, n + 1):
+        cur = [i] + [0] * m
+        for j in range(1, m + 1):
+            same = done[i - 1] == hyp[j - 1]
+            cur[j] = min(prev[j - 1] + (0 if same else 1), prev[j] + 1, cur[j - 1] + 1)
+        prev = cur
+    best = min(range(m + 1), key=lambda j: (prev[j], -j))
+    return best, prev[best]
+
+
 def silero_detector(threshold: float = 0.5, min_silence_ms: int = 300) -> SpeechDetector:
     """Taledeteksjon med Silero-VAD fra faster-whisper (lastes ved første bruk)."""
     from faster_whisper.vad import VadOptions, get_speech_timestamps
@@ -185,10 +202,22 @@ class StreamingRecognizer:
     def _decode(self) -> list[Word]:
         words = self.backend.transcribe(self.buffer, prompt=self._prompt(), hotwords=self.hotwords)
         words = [w.shifted(self.buffer_offset) for w in words if w.text.strip()]
-        # Bare ord etter det som allerede er ferdig (litt slakk for tidsfeil).
-        # Midten av ordet må ligge etter siste ferdige ord. Ny dekoding kan gi
-        # litt andre tider, og et ord som overlapper det forrige, er en ny
-        # gjetning på samme lyd, ikke et nytt ord.
+        return self._new_words(words)
+
+    def _new_words(self, words: list[Word]) -> list[Word]:
+        """Ordene i hypotesen som kommer etter det som allerede er ferdig.
+
+        Bufferen kan begynne foran siste ferdige ord, og da gjentar hypotesen
+        de ferdige ordene først. Hvor de slutter, finnes ved å sammenligne
+        teksten, fordi ordtidene kan bomme med et halvt sekund eller mer.
+        Tidene brukes bare når teksten ikke passer."""
+        inside = [w for w in self.committed if w.end > self.buffer_offset + 0.01]
+        if inside and words:
+            cut, cost = _prefix_alignment([_key(w.text) for w in inside], [_key(w.text) for w in words])
+            if cost <= len(inside) / 2:
+                return self._drop_repeated_prefix(words[cut:])
+        # Midten av ordet må ligge etter siste ferdige ord: et ord som
+        # overlapper det forrige, er en ny gjetning på samme lyd.
         words = [w for w in words if (w.start + w.end) / 2 > self.committed_end]
         return self._drop_repeated_prefix(words)
 

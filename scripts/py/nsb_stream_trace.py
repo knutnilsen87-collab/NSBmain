@@ -8,7 +8,7 @@ import argparse
 import numpy as np
 from faster_whisper import decode_audio
 
-from nsb_engine.streaming import FasterWhisperBackend, StreamingRecognizer, join_words, silero_detector
+from nsb_engine.streaming import FasterWhisperBackend, StreamingRecognizer, silero_detector
 
 
 def main() -> None:
