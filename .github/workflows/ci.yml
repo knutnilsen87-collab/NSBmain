@@ -55,6 +55,11 @@ jobs:
           grep -E "WER strøm|STRØM:|HEL:" out.txt | head -6 | while read -r l; do echo "::notice::$l"; done
           if [ $rc -ne 0 ]; then grep -E "^E |Error|FAILED" out.txt | head -25 | while read -r l; do echo "::error::$l"; done; fi
           exit $rc
+      - name: Spor av strømmingen (merknad)
+        if: always()
+        run: |
+          espeak-ng -v en-us -s 140 -w trace.wav "The defendant pleaded not guilty. The court finds the explanation credible and the conditions are met."
+          PYTHONPATH=. python scripts/py/nsb_stream_trace.py --model tiny --audio trace.wav --language en --github
       - name: Røyktesten må faktisk ha kjørt
         env:
           NSB_SMOKE_MODEL: tiny
