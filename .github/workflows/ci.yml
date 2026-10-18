@@ -17,7 +17,7 @@ jobs:
           python-version: "3.11"
       - run: python -m pip install --upgrade pip
       - run: python -m pip install -e ".[dev,engine]" ruff==0.15.20
-      - run: ruff check nsb_eval nsb_engine tests scripts/build_testsets.py scripts/download_models.py scripts/py/nsb_record_interview.py src/python/nsb_train_utils.py src/python/split_by_group.py
+      - run: ruff check nsb_eval nsb_engine tests scripts/build_testsets.py scripts/download_models.py scripts/py/nsb_record_interview.py src/python/nsb_train_utils.py src/python/split_by_group.py src/python/pseudo_label.py src/python/ssc_select.py
       - run: python -m pytest
       - name: PowerShell-skript kan parses
         shell: pwsh
