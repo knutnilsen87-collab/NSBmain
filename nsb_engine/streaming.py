@@ -40,9 +40,20 @@ class Word:
     start: float  # sekunder fra strømmens start
     end: float
     probability: float = 1.0
+    joined: bool = False  # del av forrige ord (ingen mellomrom foran), for eksempel «.2» i «13.2»
 
     def shifted(self, offset: float) -> Word:
-        return Word(self.text, self.start + offset, self.end + offset, self.probability)
+        return Word(self.text, self.start + offset, self.end + offset, self.probability, self.joined)
+
+
+def join_words(words: Sequence[Word]) -> str:
+    """Setter ordene sammen til tekst, med mellomrom der modellen hadde det."""
+    out = []
+    for i, w in enumerate(words):
+        if i and not w.joined:
+            out.append(" ")
+        out.append(w.text)
+    return "".join(out).strip()
 
 
 class Backend(Protocol):
@@ -157,7 +168,7 @@ class StreamingRecognizer:
         return self.committed[-1].end if self.committed else self.buffer_offset
 
     def text(self) -> str:
-        return " ".join(w.text for w in self.committed).strip()
+        return join_words(self.committed)
 
     def insert_audio(self, chunk: np.ndarray) -> None:
         chunk = np.asarray(chunk, dtype=np.float32).reshape(-1)
@@ -330,6 +341,10 @@ class FasterWhisperBackend:
         )
         out = []
         for seg in segments:
-            for w in seg.words or []:
-                out.append(Word(w.word.strip(), float(w.start), float(w.end), float(w.probability)))
+            for i, w in enumerate(seg.words or []):
+                raw = w.word
+                if not raw.strip():
+                    continue
+                joined = i > 0 and not raw[:1].isspace()
+                out.append(Word(raw.strip(), float(w.start), float(w.end), float(w.probability), joined))
         return out

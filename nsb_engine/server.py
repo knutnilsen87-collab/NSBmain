@@ -46,7 +46,7 @@ import numpy as np
 
 from nsb_engine import __version__
 from nsb_engine.legal_format import format_legal
-from nsb_engine.streaming import SAMPLE_RATE, StreamingRecognizer, Word
+from nsb_engine.streaming import SAMPLE_RATE, StreamingRecognizer, Word, join_words
 
 log = logging.getLogger("nsb_engine")
 
@@ -101,7 +101,7 @@ def create_app(backend, *, detector_factory=None, model_label: str = "", device:
         t0 = time.perf_counter()
         words = await asyncio.to_thread(shared.transcribe, audio, None, hotwords)
         seconds = time.perf_counter() - t0
-        text = " ".join(w.text for w in words)
+        text = join_words(words)
         log.info("transcribe audio=%.1fs processing=%.2fs words=%d", len(audio) / SAMPLE_RATE, seconds, len(words))
         return {
             "text": text,
@@ -126,7 +126,7 @@ def create_app(backend, *, detector_factory=None, model_label: str = "", device:
                 "committed": [word_dict(w, uncertain_below) for w in update.committed],
                 "tentative": [word_dict(w, uncertain_below) for w in update.tentative],
                 "text": _fmt(text, mode),
-                "tentative_text": " ".join(w.text for w in update.tentative),
+                "tentative_text": join_words(update.tentative),
                 "endpoint": update.endpoint,
                 "audio_end": round(update.audio_end, 3),
             }

@@ -42,7 +42,7 @@ def backend():
 
 
 def test_streaming_matches_batch_on_real_model(speech, backend):
-    from nsb_engine.streaming import StreamingRecognizer, silero_detector
+    from nsb_engine.streaming import StreamingRecognizer, join_words, silero_detector
     from nsb_eval.metrics import word_counts
     from nsb_eval.normalize import normalize
     from nsb_eval.streaming_eval import simulate
@@ -50,8 +50,8 @@ def test_streaming_matches_batch_on_real_model(speech, backend):
     audio, reference = speech
     rec = StreamingRecognizer(backend, detector=silero_detector(), min_step=1.0)
     res = simulate(rec, audio, chunk=0.5)
-    text = " ".join(w.text for w in res["words"])
-    batch = " ".join(w.text for w in backend.transcribe(audio))
+    text = join_words(res["words"])
+    batch = join_words(backend.transcribe(audio))
     assert text.strip(), "strømmingen ga ingen tekst"
     if reference:
         s = word_counts(normalize(reference), normalize(text))

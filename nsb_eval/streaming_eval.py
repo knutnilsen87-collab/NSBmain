@@ -39,12 +39,13 @@ from pathlib import Path
 
 import numpy as np
 
-from nsb_engine.streaming import SAMPLE_RATE, StreamingRecognizer, Word, _key
+from nsb_engine.streaming import SAMPLE_RATE, StreamingRecognizer, Word, _key, join_words
 from nsb_eval.critical import align_ops
 from nsb_eval.manifest import Item, file_sha256, load_manifest
 from nsb_eval.metrics import word_counts
 from nsb_eval.normalize import normalize
 from nsb_eval.preflight import manifest_for
+from nsb_eval.runner import _git_sha
 
 SCHEMA = "nsb-streaming-v1"
 PROB_BINS = (0.0, 0.3, 0.5, 0.7, 0.9, 1.01)
@@ -131,18 +132,35 @@ def simulate(rec: StreamingRecognizer, audio: np.ndarray, chunk: float) -> dict:
 def word_errors(reference: str, words: list[Word]) -> list[bool]:
     """For hvert ord fra modellen: ble det feil (erstattet eller innsatt)?"""
     ref = normalize(reference).split()
-    hyp, src = [], []
+    # Ord som henger sammen («13» + «.2»), vurderes som ett ord.
+    units: list[list[int]] = []
     for i, w in enumerate(words):
-        for tok in normalize(w.text).split():
+        if w.joined and units:
+            units[-1].append(i)
+        else:
+            units.append([i])
+    texts = ["".join(words[i].text for i in idx) for idx in units]
+    hyp, src = [], []
+    for u, text in enumerate(texts):
+        toks = normalize(text).split()
+        if u + 1 < len(texts):
+            # Normaliseringen avhenger av neste ord («13.» foran «mars» er et
+            # ordenstall), så ordet normaliseres sammen med det neste.
+            nxt = normalize(texts[u + 1]).split()
+            both = normalize(text + " " + texts[u + 1]).split()
+            if nxt and both[-len(nxt):] == nxt:
+                toks = both[: len(both) - len(nxt)]
+        for tok in toks:
             hyp.append(tok)
-            src.append(i)
+            src.append(u)
     wrong = [False] * len(words)
     j = 0
     for op, _, h in align_ops(ref, hyp):
         if h is None:
             continue
         if op != "ok":
-            wrong[src[j]] = True
+            for i in units[src[j]]:
+                wrong[i] = True
         j += 1
     return wrong
 
@@ -216,12 +234,12 @@ def evaluate(args) -> dict:
             rec = StreamingRecognizer(backend, detector=detector, min_step=args.min_step,
                                       endpoint_silence=args.endpoint_silence)
             res = simulate(rec, audio, args.chunk)
-            text = " ".join(w.text for w in res["words"])
+            text = join_words(res["words"])
             sc = word_counts(normalize(reference), normalize(text))
             t0 = time.perf_counter()
             batch_words = backend.transcribe(audio)
             batch_seconds = time.perf_counter() - t0
-            batch_text = " ".join(w.text for w in batch_words)
+            batch_text = join_words(batch_words)
             bc = word_counts(normalize(reference), normalize(batch_text))
             totals["stream"][0] += sc.errors
             totals["stream"][1] += sc.reference_length
@@ -254,11 +272,12 @@ def evaluate(args) -> dict:
         "schema": SCHEMA,
         "testset": args.testset or str(manifest),
         "manifest_sha256": file_sha256(manifest),
-        "model": {"label": args.label, "path": args.model, "device": args.device, "compute_type": args.compute_type,
+        "model": {"label": args.label, "path": args.model, "revision": args.model_revision, "model_sha256": args.model_sha256, "device": args.device, "compute_type": args.compute_type,
                   "language": args.language, "beam_size": args.beam_size},
         "settings": {"chunk": args.chunk, "min_step": args.min_step, "stream_seconds": args.stream_seconds,
                      "gap": args.gap, "vad": args.vad, "endpoint_silence": args.endpoint_silence},
         "started_utc": started.isoformat(), "finished_utc": datetime.now(timezone.utc).isoformat(),
+        "git_sha": _git_sha(),
         "python": sys.version.split()[0], "platform": platform.platform(),
         "streams": len(streams), "items": sum(len(s) for s in streams), "audio_seconds": round(audio_seconds, 1),
         "wer_streaming": round(totals["stream"][0] / max(1, totals["stream"][1]), 4),
@@ -283,6 +302,8 @@ def main(argv=None) -> int:
     ap.add_argument("--audio-root")
     ap.add_argument("--model", required=True)
     ap.add_argument("--label", required=True)
+    ap.add_argument("--model-revision")
+    ap.add_argument("--model-sha256")
     ap.add_argument("--device", default="cuda")
     ap.add_argument("--compute-type", default="float16")
     ap.add_argument("--language", default="no")

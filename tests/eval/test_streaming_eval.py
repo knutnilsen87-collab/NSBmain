@@ -43,3 +43,8 @@ def test_build_streams_respects_length():
     items = [Item(str(i), "", "x") for i in range(5)]
     streams = build_streams(items, 10.0, {str(i): 4.0 for i in range(5)})
     assert [len(s) for s in streams] == [2, 2, 1]
+
+
+def test_word_errors_treats_joined_pieces_as_one_word():
+    words = [Word("den", 0, 1), Word("13", 1, 2), Word(".", 2, 2.1, joined=True), Word("mars", 2.2, 3)]
+    assert word_errors("den trettende mars", words) == [False, False, False, False]
