@@ -127,3 +127,29 @@ def test_common_prefix_ignores_case_and_punctuation():
     a = [Word("Han", 0, 1), Word("nektet,", 1, 2), Word("ikke", 2, 3)]
     b = [Word("han", 0, 1), Word("nektet", 1, 2), Word("ikkje", 2, 3)]
     assert common_prefix(a, b) == 2
+
+
+def test_pause_inside_buffer_ends_utterance_even_with_coarse_steps():
+    rec, _ = make(min_step=3.0, endpoint_silence=0.8)
+    rec.detector = script_detector(rec)
+    updates = run(rec, 9.5)
+    assert any(u.endpoint for u in updates[:-1])
+    assert [w.text for w in rec.committed] == [t for t, _, _ in SCRIPT]
+
+
+def test_overlapping_guesses_are_not_committed_twice():
+    class Jitter(ScriptedBackend):
+        def transcribe(self, audio, prompt=None, hotwords=None):
+            words = super().transcribe(audio, prompt, hotwords)
+            # Ny dekoding gir et ord som overlapper det siste ferdige ordet.
+            if self.rec.committed:
+                last = self.rec.committed[-1]
+                s = last.start - self.rec.buffer_offset
+                words.insert(0, Word("gjetning", s - 0.05, s + (last.end - last.start) * 0.9, 0.5))
+            return words
+
+    backend = Jitter()
+    rec = StreamingRecognizer(backend, min_step=0.5)
+    backend.rec = rec
+    run(rec, 9.5)
+    assert "gjetning" not in [w.text for w in rec.committed]

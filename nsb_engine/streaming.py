@@ -186,7 +186,10 @@ class StreamingRecognizer:
         words = self.backend.transcribe(self.buffer, prompt=self._prompt(), hotwords=self.hotwords)
         words = [w.shifted(self.buffer_offset) for w in words if w.text.strip()]
         # Bare ord etter det som allerede er ferdig (litt slakk for tidsfeil).
-        words = [w for w in words if w.end > self.committed_end + 0.05]
+        # Midten av ordet må ligge etter siste ferdige ord. Ny dekoding kan gi
+        # litt andre tider, og et ord som overlapper det forrige, er en ny
+        # gjetning på samme lyd, ikke et nytt ord.
+        words = [w for w in words if (w.start + w.end) / 2 > self.committed_end]
         return self._drop_repeated_prefix(words)
 
     def _drop_repeated_prefix(self, words: list[Word]) -> list[Word]:
@@ -230,6 +233,21 @@ class StreamingRecognizer:
             self.buffer_offset += cut / SAMPLE_RATE
         self.previous = []
 
+    def _find_pause(self, spans: list[tuple[float, float]]) -> tuple[float | None, float | None]:
+        """Første pause på minst ``endpoint_silence`` etter siste ferdige ord.
+
+        Gir (pausens start, der bufferen kan kuttes), i strømtid. Pausen kan
+        ligge midt i bufferen (tale har startet igjen) eller på slutten."""
+        done = self.committed_end
+        for (_, end), (start, _) in zip(spans, spans[1:], strict=False):
+            a, b = self.buffer_offset + end, self.buffer_offset + start
+            if a > done and b - a >= self.endpoint_silence:
+                return a, a + min(0.3, (b - a) / 2)
+        last = self.buffer_offset + spans[-1][1]
+        if last > done - 0.5 and self.received - last >= self.endpoint_silence:
+            return last, last + min(0.3, (self.received - last) / 2)
+        return None, None
+
     def process(self) -> Update:
         """Dekoder bufferen hvis det har kommet nok ny lyd. Kalles etter hver lydbit."""
         update = Update(audio_end=self.received)
@@ -239,7 +257,7 @@ class StreamingRecognizer:
         started = self.clock()
         self.last_decoded_at = self.received
 
-        endpoint_at = None
+        endpoint_at = resume_at = None
         if self.detector is not None:
             spans = self.detector(self.buffer)
             if not spans:
@@ -252,20 +270,19 @@ class StreamingRecognizer:
                 self.previous, self.tentative = [], []
                 update.processing_seconds = self.clock() - started
                 return update
-            speech_end = self.buffer_offset + spans[-1][1]
-            if self.received - speech_end >= self.endpoint_silence:
-                endpoint_at = speech_end
+            endpoint_at, resume_at = self._find_pause(spans)
 
         words = self._decode()
         update.decoded = True
         if endpoint_at is not None:
-            # Pause etter tale: alt i bufferen er ferdig.
-            new = [w for w in words if w.start < endpoint_at + 0.2]
+            # Pause etter tale: alt før pausen er ferdig. Tale etter pausen
+            # (hvis bufferen har det) dekodes på nytt fra pausen.
+            new = [w for w in words if (w.start + w.end) / 2 < endpoint_at + 0.1]
             update.committed = new
             update.endpoint = True
             self.committed.extend(new)
-            self.tentative = []
-            self._cut_after_endpoint(max(endpoint_at, self.committed_end))
+            self._cut_after_endpoint(max(resume_at, self.committed_end))
+            self.tentative = [w for w in words[len(new):] if w.start >= self.buffer_offset]
         else:
             n = common_prefix(self.previous, words)
             # Et ord som slutter helt ved bufferens ende, kan være halvt uttalt,
