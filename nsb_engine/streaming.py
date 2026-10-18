@@ -289,7 +289,13 @@ class StreamingRecognizer:
             # og to like gjetninger på et halvt ord skal ikke bli ferdige.
             while n and words[n - 1].end > self.received - self.edge_guard:
                 n -= 1
-            new = words[:n]
+            # Ordtidene varierer mellom dekodinger, og et ord kan få en slutt
+            # som strekker seg inn i neste ord. Den tidligste av de to
+            # slutt-tidene brukes, så neste ord ikke blir regnet som allerede ferdig.
+            new = [
+                Word(w.text, w.start, max(w.start, min(w.end, p.end)), w.probability, w.joined)
+                for w, p in zip(words[:n], self.previous[:n], strict=True)
+            ]
             self.committed.extend(new)
             update.committed = new
             self.previous = words[n:]
