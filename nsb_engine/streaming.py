@@ -195,9 +195,13 @@ class StreamingRecognizer:
     # ---------- dekoding
 
     def _prompt(self) -> str | None:
-        if not self.prompt_chars or not self.committed:
+        """Ferdig tekst fra *før* bufferen. Tekst fra lyd som fortsatt er i
+        bufferen, brukes ikke: da kan modellen tro at den allerede er skrevet,
+        og hoppe over den."""
+        if not self.prompt_chars:
             return None
-        return self.text()[-self.prompt_chars:]
+        before = [w for w in self.committed if w.end <= self.buffer_offset + 0.01]
+        return join_words(before)[-self.prompt_chars:] or None
 
     def _decode(self) -> list[Word]:
         words = self.backend.transcribe(self.buffer, prompt=self._prompt(), hotwords=self.hotwords)

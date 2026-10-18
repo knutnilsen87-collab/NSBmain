@@ -116,11 +116,20 @@ def test_long_buffer_is_trimmed_without_losing_words():
     assert [w.text for w in rec.committed] == [t for t, _, _ in SCRIPT]
 
 
-def test_committed_text_is_used_as_prompt_and_hotwords_are_passed():
-    rec, backend = make(min_step=0.5, hotwords="Bjørdal Giske")
-    run(rec, 4.0)
+def test_text_before_buffer_is_used_as_prompt_and_hotwords_are_passed():
+    rec, backend = make(min_step=0.5, hotwords="Bjørdal Giske", max_buffer=3.0, trim_to=2.0)
+    run(rec, 6.0)
     assert backend.prompts[0] == (None, "Bjørdal Giske")
-    assert any(p and p.startswith("Tiltalte") for p, _ in backend.prompts)
+    assert all(h == "Bjørdal Giske" for _, h in backend.prompts)
+    prompted = [p for p, _ in backend.prompts if p]
+    assert prompted and prompted[-1].startswith("Tiltalte")
+
+
+def test_prompt_never_contains_audio_still_in_buffer():
+    rec, _ = make()
+    rec.committed = [Word("a", 0.0, 0.5), Word("b", 0.5, 1.0), Word("c", 1.0, 1.5)]
+    rec.buffer_offset = 1.0
+    assert rec._prompt() == "a b"
 
 
 def test_common_prefix_ignores_case_and_punctuation():
