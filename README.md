@@ -12,7 +12,7 @@ Status oktober 2026: fase 0 (opprydding) er ferdig. Fase 1 (målestokk) er delvi
 | `eval/testsets/` | Faste testsett (NPSC, NB Samtale), låst med sjekksum |
 | `eval/recording/` | Innspillingssett for juridisk diktering |
 | `apps/pilot-asr-api/` | FastAPI-tjeneste for transkribering (mock eller faster-whisper), med Dockerfile |
-| `src/python/` | Dataflyt og trening: `train_whisper_iterable.py`, `split_by_group.py`, `nsb_train_utils.py`, `pseudo_label.py` (treningsfasit for dialektlyd uten transkripsjon, se [PSEUDO_LABELING.md](docs/PSEUDO_LABELING.md)) |
+| `src/python/` | Dataflyt og trening: `train_whisper_iterable.py`, `split_by_group.py`, `nsb_train_utils.py`, `pseudo_label.py` (treningsfasit for dialektlyd uten transkripsjon, se [PSEUDO_LABELING.md](docs/PSEUDO_LABELING.md)), `ssc_select.py` (bokmålsfasit fra Stortinget Speech Corpus, se [SSC_TRAINING_DATA.md](docs/SSC_TRAINING_DATA.md)) |
 | `scripts/` | `run_benchmark.ps1`, `download_models.py`, `build_testsets.py`, `rotate_signing_key.ps1`, opptaksverktøy |
 | `docs/` | [Metode](docs/BENCHMARK_METHOD.md), [dataregister](docs/DATA_REGISTER.md), [sikkerhet](docs/SECURITY.md) |
 

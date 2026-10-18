@@ -26,7 +26,7 @@ Det viktigste:
 3. **Utelatelsene er like i alle dialekter** (NB-Whisper large 21–25 %, whisper-large-v3 9–13 %). De er en egenskap ved modellen, ikke ved dialekten. Dette avgjør hvordan pseudo-merkingen må filtreres (se under).
 4. **Distil-turbo tåler ikke nynorsk-dekoding på vest og sørvest** (46,1 % og 40,4 %). Kandidaten for diktering i fase 2 er dårligst nettopp der dialektgapet er størst.
 
-Før det trenes på dialekt, bør det bestemmes hva fasiten skal være for en vestlending som snakker dialekt: bokmål, nynorsk eller det taleren selv skriver. NB Samtale transkriberer hver taler på enten bokmål eller nynorsk (feltet `standard`). Pseudo-merkingen må følge samme valg (`--language-from-meta standard`), ellers lærer modellen motsatt av det testsettet måler.
+**Beslutning 2026-10-18: fasiten i treningsdata er på bokmål**, også for dialekttalere og nynorskbrukere. Pseudo-merk derfor med `--language no` (standard) og ikke `--language-from-meta`. NB Samtale transkriberer hver taler på enten bokmål eller nynorsk (feltet `standard`), så målingen må rapportere bokmålsdelen for seg; se [SSC_TRAINING_DATA.md](SSC_TRAINING_DATA.md).
 
 ## Verktøyet
 
@@ -37,7 +37,6 @@ python src/python/pseudo_label.py --in data/unlabeled/kilde_vest.jsonl `
   --out-dir build/pseudo/kilde_vest --source "Kildenavn fra dataregisteret" --license "CC BY 4.0" `
   --model models/benchmark/nb-whisper-large/ct2 --label nb-whisper-large `
   --second-model models/benchmark/whisper-large-v3/ct2 --second-label whisper-large-v3 `
-  --language-from-meta standard `
   --exclude-manifest eval/testsets/nb_samtale_test.jsonl `
   --exclude-manifest eval/testsets/npsc_test_20170207.jsonl `
   --exclude-manifest eval/testsets/npsc_eval_20170209.jsonl `
@@ -81,7 +80,7 @@ Alle forkastede klipp skrives til `rejected.jsonl` med grunn og mål. Prøv ters
 
 Den største begrensningen er lisensiert dialektlyd uten fasit, ikke verktøyet. Kandidater:
 
-- **Stortinget Speech Corpus** (CC0, over 5 000 timer, står i dataregisteret): referatet er ikke ordrett, men kan brukes som en tredje kontroll. Taler fra hele landet.
+- **Stortinget Speech Corpus** (CC0, over 5 000 timer, står i dataregisteret): eget verktøy, `src/python/ssc_select.py`, som bruker referatet som fasit der modellen bekrefter det og som kontroll ellers. Se [SSC_TRAINING_DATA.md](SSC_TRAINING_DATA.md).
 - **NB Samtale train** og **NPSC train** har allerede fasit og skal brukes direkte, ikke pseudo-merkes.
 - **Egne opptak med samtykke**, for eksempel innsamling fra vest og Trøndelag, der testsettet er tynnest.
 - Podkaster, lokalradio og NRK krever avtale eller åpen lisens per kilde; de er ikke åpne i dag.
