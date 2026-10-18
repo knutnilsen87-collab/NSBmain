@@ -2,12 +2,13 @@
 
 Norsk talegjenkjenning med etterprøvbar kvalitet: en fast, åpen målestokk for norske talemodeller, et pilot-API for transkribering og verktøy for å trene og tilpasse NB-Whisper.
 
-Status oktober 2026: fase 0 (opprydding) er ferdig. Fase 1 (målestokk) er delvis ferdig; se [status krav for krav](docs/PHASE1_STATUS.md). Første måling er kjørt 2026-10-16: fem modeller på fire faste testsett, se [analysen](eval/results/ANALYSIS.md) og [tabellene](eval/results/BENCHMARK.md). NB-Whisper large distil-turbo er kandidat for diktering, men er ikke målt på juridisk diktat ennå. Godkjenningskravene står i [ACCEPTANCE_CRITERIA.md](docs/ACCEPTANCE_CRITERIA.md) (forslag).
+Status oktober 2026: fase 0 (opprydding) er ferdig. Fase 1 (målestokk) er delvis ferdig; se [status krav for krav](docs/PHASE1_STATUS.md). Første måling er kjørt 2026-10-16: fem modeller på fire faste testsett, se [analysen](eval/results/ANALYSIS.md) og [tabellene](eval/results/BENCHMARK.md). NB-Whisper large distil-turbo er kandidat for diktering, men er ikke målt på juridisk diktat ennå. Godkjenningskravene står i [ACCEPTANCE_CRITERIA.md](docs/ACCEPTANCE_CRITERIA.md) (forslag). Fase 2 er startet: talemotoren `nsb-engine` med strømming, juridisk formatering og lokal tjeneste; se [ENGINE.md](docs/ENGINE.md) og [status for fase 2](docs/PHASE2_STATUS.md).
 
 ## Innhold
 
 | Mappe | Hva |
 | --- | --- |
+| `nsb_engine/` | Talemotoren: strømmende gjenkjenning, juridisk formatering og lokal tjeneste (HTTP og WebSocket); se [ENGINE.md](docs/ENGINE.md) |
 | `nsb_eval/` | Målestokken: norsk normalisering, WER/CER, hallusinasjonsmål, kjører, forhåndssjekk, omscoring, rapport og parvis sammenligning (`compare`) |
 | `eval/testsets/` | Faste testsett (NPSC, NB Samtale), låst med sjekksum |
 | `eval/recording/` | Innspillingssett for juridisk diktering |
@@ -42,6 +43,13 @@ python -m nsb_eval.runner --manifest eval/testsets/npsc_test_20170207.jsonl --au
 ```
 
 Testsettene peker på lyd under `dataset/` (Språkbankens filer, ikke i git). Se [dataregisteret](docs/DATA_REGISTER.md) for kilder og lisenser.
+
+## Talemotor
+
+```powershell
+scripts\RUN_ENGINE.cmd              # starter tjenesten og testsiden på http://127.0.0.1:8765/
+scripts\RUN_STREAMING_CHECK.cmd     # måler ventetid, endringer og ordsikkerhet
+```
 
 ## Pilot-API
 
