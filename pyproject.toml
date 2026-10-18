@@ -7,10 +7,14 @@ dependencies = []
 
 [project.optional-dependencies]
 whisper = ["faster-whisper==1.2.1", "av>=11,<16", "huggingface_hub>=0.23,<1.0"]
+engine = ["numpy>=1.24", "faster-whisper==1.2.1", "av>=11,<16", "fastapi>=0.110", "uvicorn>=0.29", "websockets>=12", "httpx>=0.27"]
 dev = ["pytest>=8"]
 
 [tool.setuptools]
-packages = ["nsb_eval"]
+packages = ["nsb_eval", "nsb_engine"]
+
+[tool.setuptools.package-data]
+nsb_engine = ["static/*.html"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -25,4 +29,4 @@ target-version = "py310"
 select = ["E4", "E7", "E9", "F", "W", "I", "B", "UP", "BLE"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["nsb_eval", "nsb_train_utils", "split_by_group", "pseudo_label", "ssc_select", "app"]
+known-first-party = ["nsb_eval", "nsb_engine", "nsb_train_utils", "split_by_group", "pseudo_label", "ssc_select", "app"]

@@ -1,0 +1,83 @@
+{
+  "schema": "nsb-eval-2",
+  "testset": "silence_v1_vad",
+  "manifest": "eval/testsets/silence_v1/manifest.jsonl",
+  "manifest_sha256": "2c24d5233c8484f1a68893e05ff7cc520684066612411f688898e19012a9acdd",
+  "model": {
+    "backend": "faster-whisper",
+    "model": "whisper-large-v3",
+    "model_ref": "F:\\prosjekter_MAIN\\NorwegianSpeechBase\\models\\benchmark\\whisper-large-v3",
+    "model_revision": "edaa852ec7e145841d8ffdb056a99866b5f0a478",
+    "model_sha256": "69f74147e3334731bc3a76048724833325d2ec74642fb52620eda87352e3d4f1",
+    "device": "cuda",
+    "compute_type": "float16",
+    "language": "no",
+    "task": "transcribe",
+    "beam_size": 5,
+    "temperature": 0.0,
+    "condition_on_previous_text": false,
+    "vad_filter": true,
+    "faster_whisper_version": "1.2.1",
+    "ctranslate2_version": "4.8.3",
+    "cuda_devices": 1
+  },
+  "started_utc": "2026-10-18T17:59:56.973235+00:00",
+  "finished_utc": "2026-10-18T18:00:30.960300+00:00",
+  "git_sha": "a6aa0b62a0a3ec5370fc79583714b1a2bffcfc55",
+  "python": "3.11.9",
+  "platform": "Windows-10-10.0.26200-SP0",
+  "normalizer": "nsb_eval.normalize v4 (lesbar + ordrett profil, meningsbærende feil)",
+  "language_from_meta": null,
+  "resources": {
+    "peak_rss_mb": 3123.8,
+    "peak_gpu_mb": 7652.0,
+    "gpu_baseline_mb": 3701.0,
+    "sampler": "psutil",
+    "items_measured": 12
+  },
+  "items_total": 12,
+  "items_failed": 0,
+  "complete": true,
+  "items_nonlexical_excluded": 0,
+  "speech": {
+    "items": 0,
+    "wer": null,
+    "cer": null,
+    "word_counts": {
+      "substitutions": 0,
+      "deletions": 0,
+      "insertions": 0,
+      "reference_length": 0,
+      "errors": 0
+    },
+    "substitution_rate": null,
+    "deletion_rate": null,
+    "insertion_rate": null,
+    "hallucination_items": 0,
+    "hallucination_rate": null,
+    "repetition_loop_items": 0,
+    "overlong_items": 0,
+    "empty_output_items": 0,
+    "verbatim_wer": null,
+    "verbatim_deletion_rate": null,
+    "verbatim_word_counts": {
+      "substitutions": 0,
+      "deletions": 0,
+      "insertions": 0,
+      "reference_length": 0,
+      "errors": 0
+    },
+    "critical": null,
+    "audio_seconds": 0,
+    "processing_seconds": 0,
+    "real_time_factor": null
+  },
+  "silence": {
+    "items": 12,
+    "hallucination_on_silence_items": 0,
+    "hallucination_on_silence_rate": 0.0,
+    "inserted_words": 0,
+    "audio_seconds": 175.0,
+    "real_time_factor": 0.0023
+  }
+}

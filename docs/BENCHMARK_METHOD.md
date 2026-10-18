@@ -15,7 +15,7 @@ Testsettene bygges fra Språkbankens originalfiler med `scripts/build_testsets.p
 
 ## Dekoding
 
-Samme innstillinger for alle modeller: faster-whisper 1.2.1, språk `no` (nynorsk-setningene kan dekodes med `nn` via `--language-from-meta standard`; versjon 1 av målestokken bruker `no` for alt),  oppgave `transcribe`, strålesøk 5, temperatur 0, `condition_on_previous_text=False`, ingen VAD-filter. VAD er slått av fordi den skjuler hallusinasjon i stillhet. GPU: float16; CPU: int8.
+Samme innstillinger for alle modeller: faster-whisper 1.2.1, språk `no` (nynorsk-setningene kan dekodes med `nn` via `--language-from-meta standard`; versjon 1 av målestokken bruker `no` for alt),  oppgave `transcribe`, strålesøk 5, temperatur 0, `condition_on_previous_text=False`, ingen VAD-filter. VAD er slått av i hovedmålingen fordi den skjuler hallusinasjon i stillhet. Egne kjøringer med `--vad` (Silero-VAD med standardinnstillinger) ligger i `eval/results/vad` og måler om deteksjonen fjerner tekst i stillhet og ord i tale. GPU: float16; CPU: int8.
 
 ## Normalisering
 

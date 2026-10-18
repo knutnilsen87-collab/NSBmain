@@ -29,7 +29,7 @@ Målt på låst test. Alle krav må være oppfylt.
 | WER, juridisk diktat (lesbar) | ≤ 8 % | Ikke målt | Diktat leses og rettes av advokaten; høyere tall gir mer retting enn skriving |
 | Tapte negasjoner, juridisk diktat | 0 | Ikke målt | En tapt «ikke» snur meningen |
 | Feil tall og lovhenvisninger, juridisk diktat | ≤ 2 % | Ikke målt | Paragrafnummer og beløp må stemme |
-| Tekst i stillhet, med stemmeaktivitetsdeteksjon | 0 av 12 | 4 av 12 uten deteksjon | Ingenting skal skrives når ingen snakker |
+| Tekst i stillhet, med stemmeaktivitetsdeteksjon | 0 av 12 | 0 av 12 med deteksjon (4 av 12 uten) | Ingenting skal skrives når ingen snakker |
 | WER, NPSC test | ≤ 15 % | 12,5 % | Formell norsk tale, kontroll mot tilbakegang |
 | WER, nynorsk (NB Samtale, dekodet som `nn`) | Settes når nynorsk-diktat er målt | 47,1 % | Distil-turbo blir dårligere med `nn`; nynorskbrukere kan trenge NB-Whisper large (36,8 %) |
 | Sanntidsfaktor, kundens maskinvare | ≤ 0,3 | 0,027 på RTX 4080; 0,64 på CPU (int8) | Teksten må komme mens advokaten snakker. Kravet nås ikke på CPU i dag |

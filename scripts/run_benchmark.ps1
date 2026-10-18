@@ -10,7 +10,7 @@
   5. Kjører nsb_eval.runner per modell og testsett (kan avbrytes og startes igjen).
   6. Skriver eval/results/BENCHMARK.md og BENCHMARK.json.
 
-  Fremdrift: eval/results/RUN.log og eval/results/RUN_STATUS.json.
+  Fremdrift: eval/results/RUN.log (detaljer i RUN.detail.log) og eval/results/RUN_STATUS.json.
 
 .EXAMPLE
   pwsh -File scripts\run_benchmark.ps1
@@ -51,12 +51,18 @@ $Results = Join-Path $Root 'eval/results'
 $JobRoot = if ($OutPrefix) { Join-Path $Results $OutPrefix } else { $Results }
 New-Item -ItemType Directory -Force -Path $JobRoot | Out-Null
 $Log = Join-Path $JobRoot 'RUN.log'
+# Utdata fra pip og Python går til en egen fil. Windows PowerShell 5.1 kan holde
+# filen låst etter *>>, og da feiler Add-Content mot samme fil.
+$Detail = Join-Path $JobRoot 'RUN.detail.log'
 $StatusPath = Join-Path $JobRoot 'RUN_STATUS.json'
 
 function Write-Log([string]$Message) {
     $line = '[{0}] {1}' -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ss'), $Message
     Write-Host $line
-    Add-Content -Path $Log -Value $line -Encoding utf8
+    for ($i = 0; $i -lt 10; $i++) {
+        try { Add-Content -Path $Log -Value $line -Encoding utf8 -ErrorAction Stop; return }
+        catch { Start-Sleep -Milliseconds 300 }
+    }
 }
 
 $status = [ordered]@{
@@ -91,9 +97,9 @@ if (-not $SkipSetup) {
         if ($LASTEXITCODE -ne 0 -or -not (Test-Path $Py)) { Stop-WithError "Kunne ikke lage venv med '$PythonLauncher -$PythonVersion'" }
     }
     Write-Log 'Installerer faster-whisper og CUDA-biblioteker (kan ta noen minutter)'
-    & $Py -m pip install --upgrade pip *>> $Log
-    & $Py -m pip install 'faster-whisper==1.2.1' 'av>=11,<16' 'huggingface_hub[hf_xet]>=0.23,<1.0' 'nvidia-cublas-cu12' 'nvidia-cudnn-cu12==9.*' 'psutil' *>> $Log
-    if ($LASTEXITCODE -ne 0) { Stop-WithError 'pip install feilet; se RUN.log' }
+    & $Py -m pip install --upgrade pip *>> $Detail
+    & $Py -m pip install 'faster-whisper==1.2.1' 'av>=11,<16' 'huggingface_hub[hf_xet]>=0.23,<1.0' 'nvidia-cublas-cu12' 'nvidia-cudnn-cu12==9.*' 'psutil' *>> $Detail
+    if ($LASTEXITCODE -ne 0) { Stop-WithError 'pip install feilet; se RUN.detail.log' }
 }
 if (-not (Test-Path $Py) -and -not (Get-Command $Py -ErrorAction SilentlyContinue)) { Stop-WithError "Fant ikke Python i $Py. Kjør uten -SkipSetup første gang." }
 $site = (& $Py -c "import sysconfig; print(sysconfig.get_paths()['purelib'])").Trim()
@@ -118,23 +124,23 @@ if ($ModelsJson) {
     Write-Log "Bruker ferdig modelliste $ModelsJson"
 } else {
     Write-Log 'Laster ned modeller'
-    & $Py scripts/download_models.py --out models/benchmark @onlyArgs *>> $Log
+    & $Py scripts/download_models.py --out models/benchmark @onlyArgs *>> $Detail
     $registryPath = Join-Path $Root 'models/benchmark/models.json'
 }
 if (-not (Test-Path $registryPath)) { Stop-WithError 'models.json mangler etter nedlasting' }
 $registry = Get-Content $registryPath -Raw | ConvertFrom-Json
 
 # ---------- 3. Stillhetssett og egne opptak
-& $Py -m nsb_eval.silence --out-dir eval/testsets/silence_v1 *>> $Log
+& $Py -m nsb_eval.silence --out-dir eval/testsets/silence_v1 *>> $Detail
 if ($LASTEXITCODE -ne 0) { Stop-WithError 'Kunne ikke lage stillhetssettet' }
 foreach ($ts in @($Testsets | Where-Object { $_ -in @('legal_dictation_v1', 'simulated_interview_v1') })) {
-    & $Py -m nsb_eval.recorded --root $Root --set $ts *>> $Log
+    & $Py -m nsb_eval.recorded --root $Root --set $ts *>> $Detail
     if ($LASTEXITCODE -ne 0) { Stop-WithError "Ingen (verifiserte) opptak i eval/recording/$ts" }
 }
 $preflightArgs = @(); foreach ($ts in $Testsets) { $preflightArgs += @('--testset', $ts) }
 if ($Limit -gt 0) { $preflightArgs += @('--limit', "$Limit") }
-& $Py -m nsb_eval.preflight --root $Root @preflightArgs *>> $Log
-if ($LASTEXITCODE -ne 0) { Stop-WithError 'Lydfiler mangler for et eller flere testsett (se RUN.log, linjer med [mangler])' }
+& $Py -m nsb_eval.preflight --root $Root @preflightArgs *>> $Detail
+if ($LASTEXITCODE -ne 0) { Stop-WithError 'Lydfiler mangler for et eller flere testsett (se RUN.detail.log, linjer med [mangler])' }
 
 function Get-TestsetArgs([string]$Name) {
     if ($Name -eq 'legal_dictation_v1') {
@@ -156,7 +162,7 @@ if ($Device -eq 'cuda') {
     $probe = Join-Path $Results '_gpu_probe'
     if (Test-Path $probe) { Remove-Item -Recurse -Force $probe }
     & $Py -m nsb_eval.runner @(Get-TestsetArgs 'npsc_test_20170207') --limit 3 --testset gpu_probe --backend faster-whisper `
-        --model $registry.$firstModel.path --label $firstModel --device cuda --compute-type $ComputeType --out-dir $probe *>> $Log
+        --model $registry.$firstModel.path --label $firstModel --device cuda --compute-type $ComputeType --out-dir $probe *>> $Detail
     if ($LASTEXITCODE -ne 0) {
         $probeErrors = @()
         $probeItems = Join-Path $probe 'items.jsonl'
@@ -167,7 +173,7 @@ if ($Device -eq 'cuda') {
         if ($probeErrors.Count -gt 0 -and $cudaLike.Count -eq 0) {
             Stop-WithError "GPU-sjekken feilet av en annen grunn enn CUDA: $($probeErrors[0])"
         }
-        Write-Log "GPU virker ikke ($(if ($cudaLike) { $cudaLike[0] } else { 'se RUN.log' })). Bytter til CPU int8; det tar vesentlig lengre tid."
+        Write-Log "GPU virker ikke ($(if ($cudaLike) { $cudaLike[0] } else { 'se RUN.detail.log' })). Bytter til CPU int8; det tar vesentlig lengre tid."
         $Device = 'cpu'; $ComputeType = 'int8'
         $status.device = $Device; $status.compute_type = $ComputeType
     } else {
@@ -221,8 +227,8 @@ foreach ($m in $Models) {
 
 # ---------- 6. Rapport
 $status.phase = 'report'; Save-Status
-& $Py -m nsb_eval.report --results eval/results --out eval/results/BENCHMARK.md *>> $Log
-if ($LASTEXITCODE -ne 0) { Stop-WithError 'Rapporten kunne ikke lages; se RUN.log' }
+& $Py -m nsb_eval.report --results eval/results --out eval/results/BENCHMARK.md *>> $Detail
+if ($LASTEXITCODE -ne 0) { Stop-WithError 'Rapporten kunne ikke lages; se RUN.detail.log' }
 $status.phase = $(if ($failedJobs -gt 0) { 'done_with_failures' } else { 'done' })
 $status.failed_jobs = $failedJobs
 $status.finished = (Get-Date).ToString('o')

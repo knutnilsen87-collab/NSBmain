@@ -1,12 +1,12 @@
 # Analyse av første måling (2026-10-16)
 
-Første versjon av NSB-målestokken: fem modeller, fire faste testsett, 20 kjøringer på RTX 4080 (faster-whisper 1.2.1, float16), ingen feilede setninger. I tillegg 12 kjøringer for nynorsk, minne og CPU. Tallene er scoret med `nsb_eval.normalize` v4, som har to profiler: lesbar (fyllord og avbrutte ord fjernet) og ordrett (beholdt). Tabellene står i [BENCHMARK.md](BENCHMARK.md); modellrevisjoner og sjekksummer i [models.json](models.json).
+Første versjon av NSB-målestokken: fem modeller, fire faste testsett, 20 kjøringer på RTX 4080 (faster-whisper 1.2.1, float16), ingen feilede setninger. I tillegg 12 kjøringer for nynorsk, minne og CPU, og 10 kjøringer med stemmeaktivitetsdeteksjon (18. oktober). Tallene er scoret med `nsb_eval.normalize` v4, som har to profiler: lesbar (fyllord og avbrutte ord fjernet) og ordrett (beholdt). Tabellene står i [BENCHMARK.md](BENCHMARK.md); modellrevisjoner og sjekksummer i [models.json](models.json).
 
 Hva denne målingen dekker og ikke dekker av fase 1, står i [PHASE1_STATUS.md](../../docs/PHASE1_STATUS.md). Den viktigste begrensningen: juridisk diktat og simulerte avhør er ikke spilt inn ennå, så ingen av konklusjonene under er målt på det EVIDA og domstolene faktisk skal bruke.
 
 ## Konklusjon
 
-**NB-Whisper large distil-turbo (beta) er kandidat for fase 2 (diktering i EVIDA).** Den har lavest WER på formell tale og er bedre enn NB-Whisper large på alle tre talesettene (på NPSC test så vidt). Valget er foreløpig til den er målt på juridisk diktat mot kravene i [ACCEPTANCE_CRITERIA.md](../../docs/ACCEPTANCE_CRITERIA.md). Den skriver tekst i en tredjedel av stillhetsklippene og må ha stemmeaktivitetsdeteksjon foran seg.
+**NB-Whisper large distil-turbo (beta) er kandidat for fase 2 (diktering i EVIDA).** Den har lavest WER på formell tale og er bedre enn NB-Whisper large på alle tre talesettene (på NPSC test så vidt). Valget er foreløpig til den er målt på juridisk diktat mot kravene i [ACCEPTANCE_CRITERIA.md](../../docs/ACCEPTANCE_CRITERIA.md). Uten stemmeaktivitetsdeteksjon skriver den tekst i en tredjedel av stillhetsklippene. Med deteksjon skriver den ingenting i stillhet, og nøyaktigheten i tale endres ikke målbart. Deteksjon skal derfor alltid være på i diktering.
 
 **Ingen modell er valgt for ordrett transkribering (fase 3).** NB-Whisper utelater systematisk ord, alle modellene mister mange nektelser i samtaletale, og alle feiler kraftig på nynorsk.
 
@@ -82,12 +82,33 @@ Første 100 setninger av NPSC test (11,6 minutter lyd). GPU: RTX 4080, float16. 
 - NB-Whisper large bruker 6 GB RAM også når den kjører på GPU. Distil-turbo bruker omtrent en firedel av det.
 - Sanntidsfaktor viser behandlingstid for hele setninger, ikke ventetid ved strømming. Det måles i fase 2.
 
+## Stemmeaktivitetsdeteksjon (VAD)
+
+Målt 18. oktober. faster-whisper 1.2.1 med innebygd Silero-VAD og standardinnstillinger (`vad_filter=True`), ellers samme dekoding som over. Hver kjøring er sammenlignet med kjøringen uten deteksjon på nøyaktig de samme setningene, med parvis bootstrap (2 000 trekk).
+
+**Stillhet (12 klipp, alle fem modeller):** ingen modell skriver noe. Uten deteksjon skrev Whisper large-v3 og NB-Whisper small i alle 12, NB-Whisper medium i 9, distil-turbo i 4 og NB-Whisper large i 1.
+
+**Tale:**
+
+| Testsett | Modell | WER uten | WER med | Forskjell (95 %-intervall) | Utelatelser uten → med | Tapte negasjoner uten → med |
+| --- | --- | ---: | ---: | --- | --- | --- |
+| NPSC test, 100 setninger | distil-turbo | 8,1 % | 8,1 % | 0,0 pp (−0,4 til 0,4) | 3,0 → 3,0 % | 2 → 2 av 29 |
+| NPSC test, 100 setninger | NB-Whisper large | 8,7 % | 8,5 % | −0,2 pp (−0,8 til 0,3) | 4,1 → 3,9 % | 3 → 3 av 29 |
+| NPSC test, 100 setninger | Whisper large-v3 | 12,7 % | 12,9 % | +0,2 pp (−0,2 til 0,6) | 3,0 → 3,0 % | 3 → 3 av 29 |
+| NB Samtale test (1 161) | distil-turbo | 29,9 % | 30,1 % | +0,15 pp (−0,04 til 0,36) | 17,3 → 17,5 % | 86 → 89 av 365 |
+| NB Samtale test (1 161) | NB-Whisper large | 31,6 % | 32,2 % | +0,6 pp (0,2 til 1,1) | 20,7 → 21,3 % | 100 → 102 av 365 |
+
+- For distil-turbo er ingen forskjell i tale målbar. Det er kandidatmodellen for diktering, og diktat har lange pauser der deteksjonen gjør mest nytte.
+- NB-Whisper large mister litt mer på samtale med deteksjon (0,6 prosentpoeng, flere utelatelser). Forskjellen er på størrelse med variasjonen vi har sett mellom like kjøringer av denne modellen på GPU (±0,5 pp), så den er ikke sikker, men den peker i retning av at deteksjonen kutter korte ytringer i samtale.
+- Sanntidsfaktoren øker litt for distil-turbo (0,027 → 0,036 på NPSC), fordi deteksjonen kjøres på CPU. Det er langt innenfor kravet.
+- Deteksjonen fjerner tekst i ren stillhet. Den beskytter ikke mot oppdiktet tekst inne i tale, og den er ikke testet på støy, musikk eller romklang. For ordrett transkribering (fase 3) må ord som går tapt i korte ytringer måles på avhørsopptakene.
+
 ## Funn
 
 1. **NB-Whisper utelater ord.** På NB Samtale står utelatelser for 17–21 % av ordene hos NB-Whisper, mot 12 % hos Whisper large-v3; i ordrett profil 21–25 % mot 16 %. Det gjelder også setninger uten overlappende tale. Modellene ser ut til å skrive en strammet tekst, i tråd med at de er trent på blant annet NRK-teksting.
 2. **Nynorsk er det svakeste punktet.** Med språk `no` har nynorsk 42–48 % WER mot 24–31 % for bokmål. Dekodet som nynorsk (`nn`) blir NB-Whisper large og Whisper large-v3 klart bedre, men distil-turbo blir dårligere; se egen seksjon under.
 3. **Vestlandet og sørvest er vanskeligst.** Distil-turbo: øst 24,8 %, nord 30,7 %, trøndelag 31,7 %, sørvest 39,1 %, vest 41,2 %. Mønsteret er likt for alle modellene. Overlapp med nynorsk forklarer trolig en del av dette.
-4. **Hallusinasjon i stillhet varierer mye.** Whisper large-v3 og NB-Whisper small skriver tekst i alle 12 stillhetsklipp, distil-turbo i 4, NB-Whisper large i 1. Målingen kjører uten stemmeaktivitetsdeteksjon for å avdekke dette. Hallusinasjon inne i tale (tekst som ikke har støtte i lyden selv om noen snakker) er ikke målt ennå; det krever egne merkede opptak.
+4. **Hallusinasjon i stillhet varierer mye.** Whisper large-v3 og NB-Whisper small skriver tekst i alle 12 stillhetsklipp, distil-turbo i 4, NB-Whisper large i 1. Hovedmålingen kjører uten stemmeaktivitetsdeteksjon for å avdekke dette; med deteksjon skriver ingen av modellene noe i stillhet (se over). Hallusinasjon inne i tale (tekst som ikke har støtte i lyden selv om noen snakker) er ikke målt ennå; det krever egne merkede opptak.
 5. **NB-Whisper medium låser seg.** Den gjentar fraser i løkker (8,3 % innsatte ord og 64 tilføyde nektelser på NPSC eval) og er dårligere enn small på to av tre sett. Den bør ikke brukes.
 
 ## Feil i målestokken funnet underveis
