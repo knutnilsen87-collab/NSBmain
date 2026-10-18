@@ -15,7 +15,14 @@ import pytest
 MODEL = os.environ.get("NSB_SMOKE_MODEL")
 pytestmark = pytest.mark.skipif(not MODEL, reason="NSB_SMOKE_MODEL er ikke satt")
 
-TEXT = "Tiltalte nektet straffskyld. Retten mener at forklaringen er troverdig og at vilkårene er oppfylt."
+LANG = os.environ.get("NSB_SMOKE_LANG", "no")
+# Syntetisk tale er vanskelig for små modeller. CI bruker engelsk med Whisper
+# tiny for å teste mekanikken; norsk testes med NB-Whisper og ekte opptak.
+TEXTS = {
+    "no": "Tiltalte nektet straffskyld. Retten mener at forklaringen er troverdig og at vilkårene er oppfylt.",
+    "en": "The defendant pleaded not guilty. The court finds the explanation credible and the conditions are met.",
+}
+TEXT = TEXTS[LANG]
 
 
 @pytest.fixture(scope="module")
@@ -28,7 +35,7 @@ def speech(tmp_path_factory):
     if not exe:
         pytest.skip("espeak-ng mangler")
     path = tmp_path_factory.mktemp("smoke") / "speech.wav"
-    subprocess.run([exe, "-v", "nb", "-s", "140", "-w", str(path), TEXT], check=True)
+    subprocess.run([exe, "-v", "nb" if LANG == "no" else "en-us", "-s", "140", "-w", str(path), TEXT], check=True)
     audio = decode_audio(str(path), sampling_rate=16000)
     pause = np.zeros(16000, dtype=np.float32)
     return np.concatenate([pause, audio, pause, audio, pause]), TEXT + " " + TEXT
@@ -38,7 +45,7 @@ def speech(tmp_path_factory):
 def backend():
     from nsb_engine.streaming import FasterWhisperBackend
 
-    return FasterWhisperBackend(MODEL, device="cpu", compute_type="int8", language="no", beam_size=1)
+    return FasterWhisperBackend(MODEL, device="cpu", compute_type="int8", language=LANG, beam_size=1)
 
 
 def test_streaming_matches_batch_on_real_model(speech, backend):
@@ -57,6 +64,8 @@ def test_streaming_matches_batch_on_real_model(speech, backend):
         s = word_counts(normalize(reference), normalize(text))
         b = word_counts(normalize(reference), normalize(batch))
         print(f"WER strøm {s.errors / s.reference_length:.1%}, hel {b.errors / b.reference_length:.1%}")
+        print(f"STRØM: {text}")
+        print(f"HEL: {batch}")
         assert s.errors / s.reference_length <= b.errors / b.reference_length + 0.15
     assert all(0 <= w.probability <= 1 for w in res["words"])
     starts = [w.start for w in res["words"]]
