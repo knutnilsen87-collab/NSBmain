@@ -271,5 +271,6 @@ def test_admin_cli_verifies_and_deletes(tmp_path, capsys):
 def test_master_key_is_protected_with_dpapi_on_windows(tmp_path):
     paths = Paths(tmp_path).ensure()
     first = MasterKey(paths, use_dpapi=True)
-    assert paths.master_key.read_bytes() != first.key  # filen inneholder ikke nøkkelen i klartekst
+    assert paths.master_key.read_bytes().startswith(b"DPAPI1:")
+    assert first.key not in paths.master_key.read_bytes()  # filen inneholder ikke nøkkelen i klartekst
     assert MasterKey(paths, use_dpapi=True).key == first.key

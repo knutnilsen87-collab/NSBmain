@@ -135,20 +135,31 @@ class AccessToken:
 
 
 class MasterKey:
+    """32 byte nøkkel. Filen begynner med ``DPAPI1:`` (beskyttet med Windows
+    DPAPI) eller ``RAW1:`` (filrettigheter alene), så den alltid leses riktig."""
+
     def __init__(self, paths: Paths, *, use_dpapi: bool | None = None):
         self.path = paths.master_key
         self.use_dpapi = (os.name == "nt") if use_dpapi is None else use_dpapi
         if self.path.exists():
             raw = self.path.read_bytes()
-            self.key = _dpapi(raw, protect=False) if self.use_dpapi else raw
+            if raw.startswith(b"DPAPI1:"):
+                self.key = _dpapi(raw[7:], protect=False)
+                self.use_dpapi = True
+            elif raw.startswith(b"RAW1:"):
+                self.key = raw[5:]
+                self.use_dpapi = False
+            else:
+                raise ValueError(f"ukjent format på {self.path}")
         else:
             self.key = secrets.token_bytes(32)
-            stored = self.key
             if self.use_dpapi:
-                stored = _dpapi(self.key, protect=True)
-                if _dpapi(stored, protect=False) != self.key:  # feil heller enn å lagre en nøkkel som ikke kan leses
+                sealed = _dpapi(self.key, protect=True)
+                if _dpapi(sealed, protect=False) != self.key:  # feil heller enn å lagre en nøkkel som ikke kan leses
                     raise OSError("DPAPI ga ikke tilbake samme nøkkel")
-            _write_private(self.path, stored)
+                _write_private(self.path, b"DPAPI1:" + sealed)
+            else:
+                _write_private(self.path, b"RAW1:" + self.key)
         if len(self.key) != 32:
             raise ValueError("hovednøkkelen har feil lengde")
 

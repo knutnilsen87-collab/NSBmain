@@ -53,7 +53,7 @@ jobs:
           python -m pytest tests/engine/test_engine_smoke.py -v -rs -s 2>&1 | tee out.txt
           rc=${PIPESTATUS[0]}
           grep -E "WER strøm|STRØM:|HEL:" out.txt | head -6 | while read -r l; do echo "::notice::$l"; done
-          if [ $rc -ne 0 ]; then grep -E "^E |Error|FAILED" out.txt | head -25 | while read -r l; do echo "::error::$l"; done; fi
+          if [ $rc -ne 0 ]; then grep -E "^E |Error|ERROR|FAILED" out.txt | head -25 | while read -r l; do echo "::error::$l"; done; fi
           exit $rc
       - name: Spor av strømmingen (merknad)
         if: always()
@@ -84,7 +84,7 @@ jobs:
           set +e
           python -m pytest tests/engine/test_security.py tests/engine/test_server.py -v -rs 2>&1 | tee out.txt
           rc=${PIPESTATUS[0]}
-          if [ $rc -ne 0 ]; then grep -E "^E |Error|FAILED" out.txt | head -25 | while read -r l; do echo "::error::$l"; done; fi
+          if [ $rc -ne 0 ]; then grep -E "^E |Error|ERROR|FAILED" out.txt | head -25 | while read -r l; do echo "::error::$l"; done; fi
           exit $rc
 
   train-smoke:
