@@ -78,7 +78,14 @@ jobs:
           python-version: "3.11"
       - run: python -m pip install --upgrade pip
       - run: python -m pip install -e ".[dev,engine]"
-      - run: python -m pytest tests/engine/test_security.py tests/engine/test_server.py -v -rs
+      - name: Sikkerhetstester (feil vises som merknader)
+        shell: bash
+        run: |
+          set +e
+          python -m pytest tests/engine/test_security.py tests/engine/test_server.py -v -rs 2>&1 | tee out.txt
+          rc=${PIPESTATUS[0]}
+          if [ $rc -ne 0 ]; then grep -E "^E |Error|FAILED" out.txt | head -25 | while read -r l; do echo "::error::$l"; done; fi
+          exit $rc
 
   train-smoke:
     name: Treningsskript (røyktest med liten modell)
