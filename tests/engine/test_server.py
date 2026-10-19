@@ -74,6 +74,8 @@ def test_stream_gives_updates_and_formatted_final_text(client_and_backend):
     assert final["text"] == "Tiltalte nektet straffskyld § 271."
     assert [w["text"] for w in final["words"]] == WORDS
     assert any(u["tentative"] for u in updates[:-1])
+    assert all("preview" in u for u in updates)
+    assert final["preview"] == final["text"]
     assert all(h == "Bjørdal" for h in backend.hotwords)
 
 

@@ -315,3 +315,8 @@ def test_paired_origin_can_stream(tmp_path):
         ws.send_text(json.dumps({"type": "end"}))
         assert json.loads(ws.receive_text())["type"] == "final"
     assert any(e["actor"].endswith("/user:evida") for e in app.state.audit.entries())
+
+
+def test_whoami_checks_token(app):
+    assert client(app).get("/v1/whoami").json()["ok"] is True
+    assert client(app, token=False).get("/v1/whoami").status_code == 401

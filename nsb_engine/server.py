@@ -119,7 +119,7 @@ def create_app(
     from fastapi.middleware.cors import CORSMiddleware
     from fastapi.responses import HTMLResponse, JSONResponse, Response
 
-    paths = Paths(data_root or default_root()).ensure()
+    paths = Paths(Path(data_root) if data_root else default_root()).ensure()
     token = AccessToken(paths)
     master = MasterKey(paths, use_dpapi=use_dpapi)
     audit = AuditLog(paths, master)
@@ -210,6 +210,11 @@ def create_app(
         audit.record("pair.succeeded", actor=f"token:{token.fingerprint}", origin=origin)
         return {"token": token.value}
 
+    @app.get("/v1/whoami")
+    def whoami(actor: str = Depends(require_token)):
+        """Sjekker at klientens nøkkel fortsatt gjelder (ingen innsynslogg)."""
+        return {"ok": True, "actor": actor}
+
     @app.get("/v1/health")
     def health():
         return {"status": "ok", "service": "nsb-engine", "version": __version__, "model": model_label, "device": device}
@@ -271,6 +276,9 @@ def create_app(
                 "tentative": [word_dict(w, uncertain_below) for w in update.tentative],
                 "text": _fmt(text, mode),
                 "tentative_text": join_words(update.tentative),
+                # Ferdig og foreløpig tekst formatert sammen: «paragraf to hundre og» + «syttien»
+                # blir «§ 271», ikke «§ 200 og syttien». Kan endre seg til den er ferdig.
+                "preview": _fmt(join_words(rec.committed + list(update.tentative)), mode),
                 "endpoint": update.endpoint,
                 "audio_end": round(update.audio_end, 3),
             }

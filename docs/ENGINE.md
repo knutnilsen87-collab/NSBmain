@@ -43,6 +43,8 @@ Testsiden åpnes på http://127.0.0.1:8765/ (Edge eller Chrome; Firefox støtter
 | `GET /v1/health` | Modell, enhet og versjon |
 | `POST /v1/transcribe?hotwords=…&format=legal` | Kroppen er en lydfil. Svar: `text`, `formatted`, `words` |
 | `WS /v1/stream?token=…` | Binære meldinger med 16 kHz mono 16-bit PCM. Valgfri første melding `{"type":"start","hotwords":"…","format":"legal","store":true,"consent":true,"case_ref":"…","retention_days":7}`. Avslutt med `{"type":"end"}` |
+| `POST /v1/pair` | `{"code":"…"}` fra en godkjent nettside gir tilgangsnøkkelen (engangskode i vinduet til motoren) |
+| `GET /v1/whoami` | Sjekker at nøkkelen fortsatt gjelder |
 | `GET /v1/sessions` | Lagrede økter, uten innhold |
 | `GET /v1/sessions/{id}` / `…/audio` | Tekst (og eventuell retting) / lyd som WAV. Føres i innsynsloggen |
 | `PUT /v1/sessions/{id}/transcript` | Rettet tekst `{"text":"…"}` |
@@ -51,7 +53,7 @@ Testsiden åpnes på http://127.0.0.1:8765/ (Edge eller Chrome; Firefox støtter
 
 Alle kall unntatt `/v1/health` krever `Authorization: Bearer <nøkkel>`. Valgfritt `X-NSB-User` (for eksempel EVIDA-brukeren) skrives i innsynsloggen.
 
-Med lagring inneholder sluttmeldingen også `session_id` og `expires`. Strømmen svarer med `{"type":"update", "committed":[…], "tentative":[…], "text":"…", "tentative_text":"…", "endpoint":false}` og til slutt `{"type":"final", "text":"…", "words":[…]}`. Et ord er `{"text","start","end","probability","joined","uncertain"}`. `joined` betyr at ordet henger sammen med det forrige uten mellomrom (for eksempel «.2» i «13.2»).
+Hver oppdatering har også `preview`: ferdig og foreløpig tekst formatert sammen (motorens beste gjetning akkurat nå). Med lagring inneholder sluttmeldingen også `session_id` og `expires`. Strømmen svarer med `{"type":"update", "committed":[…], "tentative":[…], "text":"…", "tentative_text":"…", "endpoint":false}` og til slutt `{"type":"final", "text":"…", "words":[…]}`. Et ord er `{"text","start","end","probability","joined","uncertain"}`. `joined` betyr at ordet henger sammen med det forrige uten mellomrom (for eksempel «.2» i «13.2»).
 
 Eksempel i Python:
 
