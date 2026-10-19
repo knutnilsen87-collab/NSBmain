@@ -1,6 +1,6 @@
 # nsb-engine: talemotoren
 
-`nsb-engine` er den felles talemotoren som EVIDA og senere domstolsløsningen skal bruke: én lokal tjeneste med strømming, ett API og én versjonert modell. Versjon 0.1.0 (oktober 2026).
+`nsb-engine` er den felles talemotoren som EVIDA og senere domstolsløsningen skal bruke: én lokal tjeneste med strømming, ett API og én versjonert modell. Versjon 0.2.0 (oktober 2026).
 
 ## Hva den gjør
 
@@ -12,7 +12,18 @@
 
 ## Personvern
 
-Tjenesten lytter bare på 127.0.0.1. Lyd og tekst lagres ikke, og loggen inneholder bare varighet, behandlingstid og antall ord. Tilgangsstyring, kryptert lagring, sletting og innsynslogg (planens krav før første ekte opptak) er **ikke** bygget ennå.
+Versjon 0.2 har sikkerhetstiltakene planen krever før første ekte opptak. Hva de beskytter mot, og hva de ikke beskytter mot, står under.
+
+| Tiltak | Slik virker det |
+| --- | --- |
+| Lyden forlater ikke maskinen | Tjenesten lytter bare på 127.0.0.1 og nekter å starte på andre adresser uten `--allow-remote`. Den gjør ingen kall ut (`HF_HUB_OFFLINE=1`; modellen leses fra disk) |
+| Tilgangsstyring | Alle kall unntatt `/v1/health` og testsiden krever tilgangsnøkkelen (`Authorization: Bearer …`, eller `?token=` for WebSocket). Nøkkelen lages ved første start og ligger i `%LOCALAPPDATA%\nsb-engine\access_token`. Tjenesten avviser fremmede `Host`-navn (mot DNS-rebinding) og WebSocket fra nettsider som ikke er godkjent (`--allow-origin` for EVIDA) |
+| Lagring bare med samtykke | Ingenting lagres med mindre klienten sender `"store": true` og `"consent": true` |
+| Kryptert lagring | Hver økt krypteres med sin egen nøkkel (AES-256-GCM). Øktnøklene krypteres med en hovednøkkel som Windows beskytter med DPAPI, bundet til Windows-brukeren. Endret innhold oppdages ved dekryptering |
+| Fast sletting | Økter slettes automatisk etter 30 dager (`--retention-days`); klienten kan korte ned, ikke forlenge. Sletting skjer ved oppstart og hver time, og fjerner øktnøkkelen først, så rester på disken ikke kan dekrypteres |
+| Innsynslogg | `%LOCALAPPDATA%\nsb-engine\audit.jsonl`: lagret, lest, lyttet, rettet, slettet, avvist tilgang, start og stopp, med tid og hvem (nøkkelens kjennetegn og `X-NSB-User` fra klienten). Aldri lyd eller tekst. Hver linje er kjedet til den forrige med en HMAC avledet av hovednøkkelen; `python -m nsb_engine.admin verify` sier om loggen er endret |
+
+**Beskytter ikke mot:** noen som er logget inn som samme Windows-bruker (de kan lese nøkkelen og dekryptere), skadevare på maskinen, eller en klient som har nøkkelen og misbruker den. Hvem som er bruker, bestemmer klienten (`X-NSB-User`); tjenesten har bare én nøkkel per maskin. Full disk-kryptering (BitLocker) anbefales i tillegg. Sertifisering og ekstern revisjon er fase 5.
 
 ## Starte
 
@@ -31,17 +42,26 @@ Testsiden åpnes på http://127.0.0.1:8765/ (Edge eller Chrome; Firefox støtter
 | --- | --- |
 | `GET /v1/health` | Modell, enhet og versjon |
 | `POST /v1/transcribe?hotwords=…&format=legal` | Kroppen er en lydfil. Svar: `text`, `formatted`, `words` |
-| `WS /v1/stream` | Binære meldinger med 16 kHz mono 16-bit PCM. Valgfri første melding `{"type":"start","hotwords":"…","format":"legal"}`. Avslutt med `{"type":"end"}` |
+| `WS /v1/stream?token=…` | Binære meldinger med 16 kHz mono 16-bit PCM. Valgfri første melding `{"type":"start","hotwords":"…","format":"legal","store":true,"consent":true,"case_ref":"…","retention_days":7}`. Avslutt med `{"type":"end"}` |
+| `GET /v1/sessions` | Lagrede økter, uten innhold |
+| `GET /v1/sessions/{id}` / `…/audio` | Tekst (og eventuell retting) / lyd som WAV. Føres i innsynsloggen |
+| `PUT /v1/sessions/{id}/transcript` | Rettet tekst `{"text":"…"}` |
+| `DELETE /v1/sessions/{id}` | Sletter økten og nøkkelen |
+| `GET /v1/audit?session=…` / `GET /v1/audit/verify` | Innsynsloggen / kontroll av den |
 
-Strømmen svarer med `{"type":"update", "committed":[…], "tentative":[…], "text":"…", "tentative_text":"…", "endpoint":false}` og til slutt `{"type":"final", "text":"…", "words":[…]}`. Et ord er `{"text","start","end","probability","joined","uncertain"}`. `joined` betyr at ordet henger sammen med det forrige uten mellomrom (for eksempel «.2» i «13.2»).
+Alle kall unntatt `/v1/health` krever `Authorization: Bearer <nøkkel>`. Valgfritt `X-NSB-User` (for eksempel EVIDA-brukeren) skrives i innsynsloggen.
+
+Med lagring inneholder sluttmeldingen også `session_id` og `expires`. Strømmen svarer med `{"type":"update", "committed":[…], "tentative":[…], "text":"…", "tentative_text":"…", "endpoint":false}` og til slutt `{"type":"final", "text":"…", "words":[…]}`. Et ord er `{"text","start","end","probability","joined","uncertain"}`. `joined` betyr at ordet henger sammen med det forrige uten mellomrom (for eksempel «.2» i «13.2»).
 
 Eksempel i Python:
 
 ```python
-import asyncio, json, websockets
+import asyncio, json, os, pathlib, websockets
+
+NØKKEL = (pathlib.Path(os.environ["LOCALAPPDATA"]) / "nsb-engine" / "access_token").read_text().strip()
 
 async def dikter(pcm_biter):
-    async with websockets.connect("ws://127.0.0.1:8765/v1/stream") as ws:
+    async with websockets.connect(f"ws://127.0.0.1:8765/v1/stream?token={NØKKEL}") as ws:
         await ws.send(json.dumps({"type": "start", "hotwords": "Bjørdal, MED-OTIR"}))
         for bit in pcm_biter:            # bytes, 16 kHz mono int16
             await ws.send(bit)
@@ -79,6 +99,6 @@ Klokken er simulert, men behandlingstiden er ekte. Resultater: `eval/results/str
 - Krever skjermkort. På CPU henger motoren etter (distil-turbo 5,5 ganger sanntiden), fordi bufferen dekodes på nytt hvert sekund. Se [strømmeanalysen](../eval/results/streaming/ANALYSIS.md).
 - Understrekingen av usikre ord fanger bare én av ti feil eller færre. Ord uten understreking kan også være feil.
 - Mye foreløpig tekst byttes ut før den blir ferdig (38 ord per 100 på formell tale, 65 på samtale).
-- Ingen lagring, tilgangsstyring eller innsynslogg; tjenesten er ikke klar for ekte saksopplysninger.
+- Én tilgangsnøkkel per maskin; brukeridentitet kommer fra klienten. Kryptering er bundet til Windows-brukeren, ikke til den enkelte advokat.
 - Stemmestyring (kommandoer som «finn alle dokumenter der …») er ikke bygget.
 - «kl.» scores som feil av målestokkens normalisering, som ikke utvider «kl.» til «klokka». Påvirker bare målingen, ikke teksten.

@@ -13,10 +13,10 @@ Statusverdier som i [fase 1](PHASE1_STATUS.md): **verifisert**, **venter på kj�
 | Normalisering av juridiske uttrykk | Verifisert | `nsb_engine.legal_format`: paragraf, datoer, beløp, klokkeslett, saksnummer, dikteringskommandoer. 29 tester. Endret ikke WER på distil-turbos utdata for tre testsett |
 | Ordliste over lovnavn og fagord | Ikke startet | |
 | Usikre ord synlige | Bygget, svakt signal | Understreking under 0,5: et understreket ord er feil 3–4 ganger så ofte som andre, men bare 6–11 % av feilene blir understreket. Vakling mellom dekodinger fanger en tredjedel, men markerer hvert fjerde til sjette ord. Et bedre signal må utvikles og måles på juridisk diktat |
-| Klikk for å høre lyden og rette; rettelser lagres som testdata | Ikke startet | Krever lagring med samtykke, som igjen krever sikkerhetstiltakene under |
+| Klikk for å høre lyden og rette; rettelser lagres som testdata | API bygget | Motoren lagrer lyd og tekst med samtykke og tar imot rettet tekst (`PUT /v1/sessions/{id}/transcript`). Klikk-for-å-høre i brukerflaten og eksport av rettelser til testdata gjenstår |
 | Stemmestyring med bekreftelse | Ikke startet | |
 | Mål mot juridisk testsett for hver ny versjon | Blokkert | Venter på opptak fra fase 1 |
-| Sikkerhet før første ekte opptak: tilgangsstyring, kryptert lagring, sletting, innsynslogg, lyd forlater ikke maskinen | Delvis | Tjenesten lytter bare på 127.0.0.1 og lagrer ingenting. Resten er ikke bygget, så tjenesten skal ikke brukes med ekte saksopplysninger |
+| Sikkerhet før første ekte opptak: tilgangsstyring, kryptert lagring, sletting, innsynslogg, lyd forlater ikke maskinen | Verifisert (lokal motor) | Tilgangsnøkkel, Host/Origin-kontroll, AES-256-GCM per økt med DPAPI-beskyttet hovednøkkel, fast sletting (30 dager), HMAC-kjedet innsynslogg, bare 127.0.0.1. 21 sikkerhetstester; DPAPI testet på Windows i CI. Se [ENGINE.md](ENGINE.md#personvern). Gjelder motoren; EVIDA må ha tilsvarende for det EVIDA lagrer |
 | EVIDA med diktering hos 3–5 advokater | Ikke startet | Integrasjon mot EVIDA via WebSocket-API-et |
 
 ## Neste steg
@@ -24,4 +24,4 @@ Statusverdier som i [fase 1](PHASE1_STATUS.md): **verifisert**, **venter på kj�
 1. ~~Kjør `scripts\RUN_STREAMING_CHECK.cmd`~~ Gjort 19. oktober. Kjør det én gang til for de to manglende NPSC-kjøringene (omtrent 5 minutter). Kravene til strømming er godkjent.
 2. Prøv diktering selv med `scripts\RUN_ENGINE.cmd`.
 3. Koble EVIDA til `ws://127.0.0.1:8765/v1/stream`.
-4. Bygg sikkerhetstiltakene før noen dikterer med ekte saksopplysninger.
+4. ~~Bygg sikkerhetstiltakene~~ Gjort i motoren 19. oktober. Før ekte saksopplysninger: slå på BitLocker, og la en annen enn utvikleren gå gjennom [ENGINE.md](ENGINE.md#personvern).
