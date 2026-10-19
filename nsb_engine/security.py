@@ -81,24 +81,31 @@ def _write_private(path: Path, data: bytes) -> None:
 
 
 def _dpapi(data: bytes, protect: bool) -> bytes:  # pragma: no cover - bare Windows
+    """CryptProtectData/CryptUnprotectData for gjeldende Windows-bruker."""
     import ctypes
     from ctypes import wintypes
 
     class Blob(ctypes.Structure):
-        _fields_ = [("cbData", wintypes.DWORD), ("pbData", ctypes.POINTER(ctypes.c_char))]
+        _fields_ = [("cbData", wintypes.DWORD), ("pbData", ctypes.POINTER(ctypes.c_byte))]
 
-    crypt32, kernel32 = ctypes.windll.crypt32, ctypes.windll.kernel32
-    buf = ctypes.create_string_buffer(data, len(data))
-    src = Blob(len(data), ctypes.cast(buf, ctypes.POINTER(ctypes.c_char)))
-    dst = Blob()
+    crypt32 = ctypes.WinDLL("crypt32", use_last_error=True)
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
     fn = crypt32.CryptProtectData if protect else crypt32.CryptUnprotectData
-    ok = fn(ctypes.byref(src), None, None, None, None, 0x1, ctypes.byref(dst))  # CRYPTPROTECT_UI_FORBIDDEN
-    if not ok:
-        raise OSError("DPAPI feilet")
+    fn.argtypes = [ctypes.POINTER(Blob), ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p,
+                   wintypes.DWORD, ctypes.POINTER(Blob)]
+    fn.restype = wintypes.BOOL
+    kernel32.LocalFree.argtypes = [ctypes.c_void_p]
+    kernel32.LocalFree.restype = ctypes.c_void_p
+
+    buf = (ctypes.c_byte * len(data)).from_buffer_copy(data)
+    src = Blob(len(data), ctypes.cast(buf, ctypes.POINTER(ctypes.c_byte)))
+    dst = Blob()
+    if not fn(ctypes.byref(src), None, None, None, None, 0x1, ctypes.byref(dst)):  # CRYPTPROTECT_UI_FORBIDDEN
+        raise OSError(f"DPAPI feilet (Windows-feil {ctypes.get_last_error()})")
     try:
         return ctypes.string_at(dst.pbData, dst.cbData)
     finally:
-        kernel32.LocalFree(dst.pbData)
+        kernel32.LocalFree(ctypes.cast(dst.pbData, ctypes.c_void_p))
 
 
 # ---------- Tilgangsnøkkel
