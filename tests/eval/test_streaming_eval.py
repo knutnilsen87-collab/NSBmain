@@ -2,7 +2,7 @@ import numpy as np
 
 from nsb_engine.streaming import SAMPLE_RATE, StreamingRecognizer, Word
 from nsb_eval.manifest import Item
-from nsb_eval.streaming_eval import build_streams, confidence_table, simulate, word_errors
+from nsb_eval.streaming_eval import build_streams, confidence_table, simulate, uncertainty_signals, word_errors
 
 
 class Scripted:
@@ -48,3 +48,11 @@ def test_build_streams_respects_length():
 def test_word_errors_treats_joined_pieces_as_one_word():
     words = [Word("den", 0, 1), Word("13", 1, 2), Word(".", 2, 2.1, joined=True), Word("mars", 2.2, 3)]
     assert word_errors("den trettende mars", words) == [False, False, False, False]
+
+
+def test_uncertainty_signals_compare_flags():
+    words = [Word("a", 0, 1, 0.9, revisions=2), Word("b", 1, 2, 0.3), Word("c", 2, 3, 0.9), Word("d", 3, 4, 0.9, revisions=1)]
+    sig = uncertainty_signals(words, [True, False, False, True])
+    assert sig["revised"] == {"flagged_share": 0.5, "precision": 1.0, "recall": 1.0}
+    assert sig["probability_below_0.5"]["precision"] == 0.0
+    assert sig["revised_twice"]["recall"] == 0.5

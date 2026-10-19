@@ -26,7 +26,7 @@ from __future__ import annotations
 import re
 import time
 from collections.abc import Callable, Sequence
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, replace
 from typing import Protocol
 
 import numpy as np
@@ -41,9 +41,10 @@ class Word:
     end: float
     probability: float = 1.0
     joined: bool = False  # del av forrige ord (ingen mellomrom foran), for eksempel «.2» i «13.2»
+    revisions: int = 0  # hvor mange andre ord som ble gjettet på samme sted før ordet ble ferdig
 
     def shifted(self, offset: float) -> Word:
-        return Word(self.text, self.start + offset, self.end + offset, self.probability, self.joined)
+        return replace(self, start=self.start + offset, end=self.end + offset)
 
 
 def join_words(words: Sequence[Word]) -> str:
@@ -179,6 +180,7 @@ class StreamingRecognizer:
         self.previous: list[Word] = []  # forrige hypotese etter siste ferdige ord
         self.tentative: list[Word] = []
         self._forced: list[Word] = []  # ord gjort ferdige ved kutt, meldes i neste oppdatering
+        self._seen: list[tuple[float, float, str]] = []  # (start, slutt, ord) fra alle dekodinger
 
     @property
     def committed_end(self) -> float:
@@ -206,7 +208,26 @@ class StreamingRecognizer:
     def _decode(self) -> list[Word]:
         words = self.backend.transcribe(self.buffer, prompt=self._prompt(), hotwords=self.hotwords)
         words = [w.shifted(self.buffer_offset) for w in words if w.text.strip()]
-        return self._new_words(words)
+        new = self._new_words(words)
+        # Ord helt ved bufferens ende er ofte halvt uttalt; slike gjetninger
+        # teller ikke som vakling.
+        edge = self.received - self.edge_guard
+        self._seen.extend((w.start, w.end, _key(w.text)) for w in new if w.end <= edge)
+        horizon = self.committed_end - 10.0
+        self._seen = [x for x in self._seen if x[1] >= horizon]
+        return new
+
+    def _with_revisions(self, words: list[Word]) -> list[Word]:
+        """Teller hvor mange andre ord dekodingene har gjettet på samme sted.
+        Et ord modellen har vaklet om, er oftere feil enn et ord den har vært
+        enig med seg selv om hele tiden."""
+        out = []
+        for w in words:
+            mid = (w.start + w.end) / 2
+            keys = {k for s, e, k in self._seen if s - 0.05 <= mid <= e + 0.05}
+            keys.discard(_key(w.text))
+            out.append(replace(w, revisions=len(keys)) if keys else w)
+        return out
 
     def _new_words(self, words: list[Word]) -> list[Word]:
         """Ordene i hypotesen som kommer etter det som allerede er ferdig.
@@ -248,6 +269,7 @@ class StreamingRecognizer:
         limit = self.received - self.trim_to
         forced = [w for w in self.previous if w.end <= limit]
         if forced:
+            forced = self._with_revisions(forced)
             self.committed.extend(forced)
             self._forced.extend(forced)
             self.previous = self.previous[len(forced):]
@@ -310,7 +332,7 @@ class StreamingRecognizer:
         if endpoint_at is not None:
             # Pause etter tale: alt før pausen er ferdig. Tale etter pausen
             # (hvis bufferen har det) dekodes på nytt fra pausen.
-            new = [w for w in words if (w.start + w.end) / 2 < endpoint_at + 0.1]
+            new = self._with_revisions([w for w in words if (w.start + w.end) / 2 < endpoint_at + 0.1])
             update.committed = new
             update.endpoint = True
             self.committed.extend(new)
@@ -325,10 +347,10 @@ class StreamingRecognizer:
             # Ordtidene varierer mellom dekodinger, og et ord kan få en slutt
             # som strekker seg inn i neste ord. Den tidligste av de to
             # slutt-tidene brukes, så neste ord ikke blir regnet som allerede ferdig.
-            new = [
-                Word(w.text, w.start, max(w.start, min(w.end, p.end)), w.probability, w.joined)
+            new = self._with_revisions([
+                replace(w, end=max(w.start, min(w.end, p.end)))
                 for w, p in zip(words[:n], self.previous[:n], strict=True)
-            ]
+            ])
             self.committed.extend(new)
             update.committed = new
             self.previous = words[n:]
@@ -349,7 +371,7 @@ class StreamingRecognizer:
         if self.detector is not None and len(self.buffer):
             has_speech = bool(self.detector(self.buffer))
         if len(self.buffer) and has_speech:
-            words = self._decode()
+            words = self._with_revisions(self._decode())
             update.decoded = True
             self.committed.extend(words)
             update.committed = words

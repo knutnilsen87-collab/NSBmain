@@ -176,3 +176,21 @@ def test_new_words_found_by_text_when_times_are_wrong():
     assert [w.text for w in rec._new_words(hyp)] == ["The", "court", "finds"]
     assert _prefix_alignment(["a", "b"], ["x", "a", "b", "c"]) == (3, 0)
     assert _prefix_alignment(["a", "b"], ["a", "q", "c"]) == (2, 1)
+
+
+def test_words_the_model_wavered_on_get_revisions():
+    class Wavering(ScriptedBackend):
+        def transcribe(self, audio, prompt=None, hotwords=None):
+            words = super().transcribe(audio, prompt, hotwords)  # teller kallet
+            # «nektet» gjettes som «nekta» i annenhver dekoding før det blir ferdig.
+            if self.calls % 2 == 1:
+                words = [Word("nekta", w.start, w.end, w.probability) if w.text == "nektet" else w for w in words]
+            return words
+
+    backend = Wavering()
+    rec = StreamingRecognizer(backend, min_step=0.5)
+    backend.rec = rec
+    run(rec, 9.5)
+    by_text = {w.text: w for w in rec.committed}
+    assert by_text["Tiltalte"].revisions == 0
+    assert (by_text.get("nektet") or by_text.get("nekta")).revisions >= 1

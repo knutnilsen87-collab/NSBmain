@@ -190,6 +190,28 @@ def confidence_table(pairs: list[tuple[float, bool]]) -> dict:
     }
 
 
+def flag_table(rows: list[tuple[bool, bool]]) -> dict:
+    """(markert, feil) per ord -> andel markert, presisjon og dekning."""
+    flagged = [wrong for f, wrong in rows if f]
+    total_wrong = sum(w for _, w in rows)
+    return {
+        "flagged_share": round(len(flagged) / len(rows), 4) if rows else None,
+        "precision": round(sum(flagged) / len(flagged), 4) if flagged else None,
+        "recall": round(sum(flagged) / total_wrong, 4) if total_wrong else None,
+    }
+
+
+def uncertainty_signals(words: list[Word], wrong: list[bool]) -> dict:
+    """Sammenligner måter å peke ut usikre ord på."""
+    rows = list(zip(words, wrong, strict=True))
+    return {
+        "probability_below_0.5": flag_table([(w.probability < 0.5, x) for w, x in rows]),
+        "revised": flag_table([(w.revisions > 0, x) for w, x in rows]),
+        "revised_or_below_0.5": flag_table([(w.revisions > 0 or w.probability < 0.5, x) for w, x in rows]),
+        "revised_twice": flag_table([(w.revisions > 1, x) for w, x in rows]),
+    }
+
+
 def _pct(values: list[float], q: float) -> float | None:
     if not values:
         return None
@@ -222,6 +244,7 @@ def evaluate(args) -> dict:
 
     totals = {"stream": [0, 0], "batch": [0, 0]}
     commit_lat, display_lat, pairs = [], [], []
+    all_words, all_wrong = [], []
     changes = final_words = 0
     processing = audio_seconds = 0.0
     max_lag = 0.0
@@ -249,6 +272,8 @@ def evaluate(args) -> dict:
             display_lat += res["display_latency"]
             wrong = word_errors(reference, res["words"])
             pairs += [(w.probability, x) for w, x in zip(res["words"], wrong, strict=True)]
+            all_words += res["words"]
+            all_wrong += wrong
             changes += res["changes"]
             final_words += len(res["words"])
             processing += res["processing_seconds"]
@@ -262,7 +287,8 @@ def evaluate(args) -> dict:
                 "wer_batch": round(bc.errors / max(1, bc.reference_length), 4),
                 "decodes": res["decodes"], "processing_seconds": round(res["processing_seconds"], 3),
                 "batch_seconds": round(batch_seconds, 3), "changes": res["changes"],
-                "words": [[w.text, round(w.start, 2), round(w.end, 2), round(w.probability, 3)] for w in res["words"]],
+                "words": [[w.text, round(w.start, 2), round(w.end, 2), round(w.probability, 3), w.revisions, x]
+                          for w, x in zip(res["words"], wrong, strict=True)],
             }, ensure_ascii=False) + "\n")
             print(f"[{n}/{len(streams)}] {len(audio) / SAMPLE_RATE:.0f} s  WER strøm {sc.errors / max(1, sc.reference_length):.1%}"
                   f"  hel {bc.errors / max(1, bc.reference_length):.1%}  ferdig-ventetid median "
@@ -289,6 +315,7 @@ def evaluate(args) -> dict:
         "max_lag_s": round(max_lag, 3),
         "final_lag_s": {"median": _pct(final_lags, 0.5), "max": _pct(final_lags, 1.0)},
         "confidence": confidence_table(pairs),
+        "uncertainty_signals": uncertainty_signals(all_words, all_wrong),
     }
     (out / "streaming_summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
     return summary

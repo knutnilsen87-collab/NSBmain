@@ -1,0 +1,106 @@
+{
+  "schema": "nsb-streaming-v1",
+  "testset": "npsc_test_20170207",
+  "manifest_sha256": "491eab00fdd8f234d4f5b7210ff69fd97980dd7f606b53e7d9cd402c88c4e444",
+  "model": {
+    "label": "nb-whisper-large",
+    "path": "models/benchmark/nb-whisper-large/ct2",
+    "revision": "8c6249fdeeb4dcd05e5735a4c39640607eb6e4ac",
+    "model_sha256": "91a2575f6e703d0bf6d8ce228a490c40e2404e6275932c20ff137382f35f726d",
+    "device": "cuda",
+    "compute_type": "float16",
+    "language": "no",
+    "beam_size": 5
+  },
+  "settings": {
+    "chunk": 0.5,
+    "min_step": 1.0,
+    "stream_seconds": 60.0,
+    "gap": 0.5,
+    "vad": true,
+    "endpoint_silence": 0.8
+  },
+  "started_utc": "2026-10-18T21:32:51.017875+00:00",
+  "finished_utc": "2026-10-18T21:45:27.494342+00:00",
+  "git_sha": "7e8712b71b2576d3ecfd696cd0d4f51a859636a7",
+  "python": "3.11.9",
+  "platform": "Windows-10-10.0.26200-SP0",
+  "streams": 26,
+  "items": 200,
+  "audio_seconds": 1510.3,
+  "wer_streaming": 0.0835,
+  "wer_batch": 0.1213,
+  "commit_latency_s": {
+    "median": 2.12,
+    "p90": 3.415,
+    "max": 8.357
+  },
+  "display_latency_s": {
+    "median": 1.054,
+    "p90": 2.189
+  },
+  "changes_per_100_words": 38.3,
+  "real_time_factor": 0.4541,
+  "max_lag_s": 7.203,
+  "final_lag_s": {
+    "median": 0.539,
+    "max": 1.313
+  },
+  "confidence": {
+    "words": 3039,
+    "wrong": 148,
+    "error_rate": 0.0487,
+    "bins": [
+      {
+        "from": 0.0,
+        "to": 0.3,
+        "words": 18,
+        "error_rate": 0.0556
+      },
+      {
+        "from": 0.3,
+        "to": 0.5,
+        "words": 39,
+        "error_rate": 0.1795
+      },
+      {
+        "from": 0.5,
+        "to": 0.7,
+        "words": 984,
+        "error_rate": 0.0457
+      },
+      {
+        "from": 0.7,
+        "to": 0.9,
+        "words": 1226,
+        "error_rate": 0.053
+      },
+      {
+        "from": 0.9,
+        "to": 1.0,
+        "words": 772,
+        "error_rate": 0.0389
+      }
+    ],
+    "thresholds": [
+      {
+        "below": 0.3,
+        "flagged_share": 0.0059,
+        "precision": 0.0556,
+        "recall": 0.0068
+      },
+      {
+        "below": 0.5,
+        "flagged_share": 0.0188,
+        "precision": 0.1404,
+        "recall": 0.0541
+      },
+      {
+        "below": 0.7,
+        "flagged_share": 0.3425,
+        "precision": 0.0509,
+        "recall": 0.3581
+      }
+    ]
+  }
+}
