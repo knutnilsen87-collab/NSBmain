@@ -21,7 +21,7 @@ Statusverdier som i [fase 1](PHASE1_STATUS.md): **verifisert**, **venter på kj�
 
 ## Neste steg
 
-1. ~~Kjør `scripts\RUN_STREAMING_CHECK.cmd`~~ Gjort 19. oktober. Kjør det én gang til for de to manglende NPSC-kjøringene (omtrent 5 minutter), Kravene til strømming er godkjent.
+1. ~~Kjør `scripts\RUN_STREAMING_CHECK.cmd`~~ Gjort 19. oktober. Kjør det én gang til for de to manglende NPSC-kjøringene (omtrent 5 minutter). Kravene til strømming er godkjent.
 2. Prøv diktering selv med `scripts\RUN_ENGINE.cmd`.
 3. Koble EVIDA til `ws://127.0.0.1:8765/v1/stream`.
 4. Bygg sikkerhetstiltakene før noen dikterer med ekte saksopplysninger.

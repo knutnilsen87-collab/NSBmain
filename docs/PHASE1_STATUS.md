@@ -1,6 +1,6 @@
 # Fase 1: status krav for krav
 
-Oppdatert 2026-10-19. Fase 1 er **ikke lukket**. Alle målinger som kan gjøres med åpne data, er gjort og etterprøvbare. Godkjenningskravene er godkjent. Det som gjenstår, krever opptak (juridisk diktat og simulerte avhør).
+Oppdatert 2026-10-19. Fase 1 er **ikke lukket**. Alle målinger som kan gjøres med åpne data, er gjort og etterprøvbare. Det som gjenstår, krever opptak (juridisk diktat og simulerte avhør) og godkjenning av kravene for diktering.
 
 Statusverdier: **verifisert** (gjort og kontrollert, med bevis), **venter på kjøring** (klart, men må kjøres på RTX 4080-maskinen), **blokkert** (krever opptak eller en beslutning), **utsatt** (flyttet til senere fase, med begrunnelse), **endret** (kravet er tatt ut eller erstattet).
 
@@ -27,7 +27,7 @@ Statusverdier: **verifisert** (gjort og kontrollert, med bevis), **venter på kj
 | Åpen publisering av resultater | Verifisert | Kode, testsett og resultater i det offentlige repoet. Resultatsiden er delt med lenke (alle med lenken kan åpne den), oppdatert med v4-tallene |
 | Modell for fase 2 (diktering) | Foreløpig | Kandidat: NB-Whisper distil-turbo. Endelig valg etter måling på juridisk diktat mot [godkjenningskravene](ACCEPTANCE_CRITERIA.md) |
 | Modell for fase 3 (ordrett) | Blokkert | Ingen modell oppfyller behovet. Krever avhørsopptak og undersøkelse av ordrette NB-Whisper-varianter |
-| Godkjenningskrav fastsatt før nye forsøk | Verifisert | [ACCEPTANCE_CRITERIA.md](ACCEPTANCE_CRITERIA.md) versjon 1, godkjent av prosjekteier 2026-10-19, før opptakene er målt |
+| Godkjenningskrav fastsatt før nye forsøk | Delvis | Kravene til strømming er godkjent 2026-10-19. Kravene for juridisk diktat, stillhet, NPSC, sanntidsfaktor og minne er forslag i [ACCEPTANCE_CRITERIA.md](ACCEPTANCE_CRITERIA.md) og venter på godkjenning fra prosjekteier |
 | Skille mellom trening, validering og låst test | Verifisert | Regel i [ACCEPTANCE_CRITERIA.md](ACCEPTANCE_CRITERIA.md); `split_by_group.py` utelukker testsettene |
 
 ## Hva som lukker fase 1
@@ -36,5 +36,5 @@ Statusverdier: **verifisert** (gjort og kontrollert, med bevis), **venter på kj
 2. ~~Kjør `scripts\RUN_VAD_CHECK.cmd`~~ Gjort 18. oktober: ingen tekst i stillhet med deteksjon, og ingen målbar ordtap for distil-turbo.
 3. Spill inn juridisk diktat med minst tre talere: `scripts\RECORD_DICTATION.cmd`, én gang per taler (omtrent 15 minutter hver).
 4. Spill inn simulerte avhør med to personer: `scripts\RECORD_INTERVIEW.cmd`. Kontroller fasitene og sett `verified: true`.
-5. ~~Godkjenn eller endre tallene i godkjenningskravene.~~ Godkjent 19. oktober.
+5. Godkjenn eller endre tallene i godkjenningskravene for diktering (kravene til strømming er godkjent).
 6. Kjør `scripts\MEASURE_RECORDINGS.cmd`. Først da kan modellvalget for fase 2 bekreftes.

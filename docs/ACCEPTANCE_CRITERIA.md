@@ -2,7 +2,9 @@
 
 Kravene settes før en modell eller innstilling prøves, og de endres ikke etter at resultatene er kjent. Endres et krav, får det nytt versjonsnummer, og endringen begrunnes her.
 
-Versjon 1, 2026-10-16 (strømmekrav lagt til 2026-10-19). **Status: godkjent av prosjekteier 2026-10-19.** Tallene ble satt ut fra første måling, før modellen er målt på juridisk diktat. To grenser står fortsatt åpne: nynorsk (settes når nynorsk-diktat er målt) og ombyttede foreløpige ord (settes etter at advokater har prøvd testsiden).
+Versjon 1, 2026-10-16 (strømmekrav lagt til 2026-10-19).
+
+**Status:** Kravene til strømming er godkjent av prosjekteier 2026-10-19. Kravene for diktering, stillhet, NPSC, sanntidsfaktor og minne er fortsatt **forslag** og må godkjennes før juridisk diktat måles. Tallene er satt ut fra første måling. Åpne grenser: nynorsk (settes når nynorsk-diktat er målt) og ombyttede foreløpige ord (settes etter at advokater har prøvd testsiden).
 
 ## Tre typer data
 
@@ -24,7 +26,7 @@ Regler:
 
 Målt på låst test. Alle krav må være oppfylt.
 
-| Krav | Grense | Første måling, distil-turbo | Hvorfor |
+| Krav | Grense (forslag) | Første måling, distil-turbo | Hvorfor |
 | --- | --- | --- | --- |
 | WER, juridisk diktat (lesbar) | ≤ 8 % | Ikke målt | Diktat leses og rettes av advokaten; høyere tall gir mer retting enn skriving |
 | Tapte negasjoner, juridisk diktat | 0 | Ikke målt | En tapt «ikke» snur meningen |
@@ -37,7 +39,7 @@ Målt på låst test. Alle krav må være oppfylt.
 
 Høy behandlingshastighet viser at modellen klarer å holde følge, men dokumenterer ikke god direktediktering. Derfor stilles egne krav til strømming, målt med `nsb_eval.streaming_eval` (strømmer på ett minutt, lydbiter på 0,5 s):
 
-| Krav | Grense | Første måling, distil-turbo på RTX 4080 (NPSC / NB Samtale) | Hvorfor |
+| Krav | Grense (godkjent 2026-10-19) | Første måling, distil-turbo på RTX 4080 (NPSC / NB Samtale) | Hvorfor |
 | --- | --- | --- | --- |
 | Ord vises på skjermen, median | ≤ 1,0 s | 0,74 / 0,81 s | Advokaten skal se at teksten følger med |
 | Ord vises, 90 % av ordene | ≤ 2,0 s | 1,45 / 1,84 s | Ingen lange stopp |
