@@ -274,3 +274,44 @@ def test_master_key_is_protected_with_dpapi_on_windows(tmp_path):
     assert paths.master_key.read_bytes().startswith(b"DPAPI1:")
     assert first.key not in paths.master_key.read_bytes()  # filen inneholder ikke nøkkelen i klartekst
     assert MasterKey(paths, use_dpapi=True).key == first.key
+
+
+# ---------- paring for EVIDA
+
+
+def evida_app(tmp_path):
+    return create_app(Backend(), data_root=tmp_path, use_dpapi=False, allowed_origins=["http://127.0.0.1:5173"])
+
+
+def test_pairing_gives_token_to_allowed_origin_once(tmp_path):
+    app = evida_app(tmp_path)
+    c = client(app, token=False)
+    code = app.state.pairing["code"]
+    r = c.post("/v1/pair", json={"code": code}, headers={"Origin": "http://127.0.0.1:5173"})
+    assert r.status_code == 200 and r.json()["token"] == app.state.token.value
+    again = c.post("/v1/pair", json={"code": code}, headers={"Origin": "http://127.0.0.1:5173"})
+    assert again.status_code == 410
+    assert [e["action"] for e in app.state.audit.entries()].count("pair.succeeded") == 1
+
+
+def test_pairing_refuses_other_origins_and_wrong_codes(tmp_path):
+    app = evida_app(tmp_path)
+    c = client(app, token=False)
+    code = app.state.pairing["code"]
+    assert c.post("/v1/pair", json={"code": code}, headers={"Origin": "https://ondsinnet.example"}).status_code == 403
+    assert c.post("/v1/pair", json={"code": code}).status_code == 403  # uten Origin: ikke en nettleser fra EVIDA
+    for _ in range(5):
+        assert c.post("/v1/pair", json={"code": "00000000" if code != "00000000" else "11111111"},
+                      headers={"Origin": "http://127.0.0.1:5173"}).status_code == 401
+    # Etter fem feil er paring stengt, også med riktig kode.
+    assert c.post("/v1/pair", json={"code": code}, headers={"Origin": "http://127.0.0.1:5173"}).status_code == 410
+
+
+def test_paired_origin_can_stream(tmp_path):
+    app = evida_app(tmp_path)
+    c = client(app)
+    url = f"{WS}?token={app.state.token.value}&user=evida"
+    with c.websocket_connect(url, headers={"origin": "http://127.0.0.1:5173"}) as ws:
+        ws.send_text(json.dumps({"type": "end"}))
+        assert json.loads(ws.receive_text())["type"] == "final"
+    assert any(e["actor"].endswith("/user:evida") for e in app.state.audit.entries())

@@ -74,7 +74,7 @@ class SessionStore:
         if not consent:
             raise PermissionError("lagring krever samtykke")
         days = min(retention_days or self.retention_days, self.retention_days)  # klienten kan bare korte ned
-        sid = secrets.token_urlsafe(18)
+        sid = secrets.token_hex(16)  # aldri «-» først (ville blitt lest som et flagg på kommandolinjen)
         created = _now()
         meta = SessionMeta(
             id=sid, created=created.isoformat(timespec="seconds"),

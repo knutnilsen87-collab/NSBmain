@@ -38,6 +38,11 @@ Grensesnitt (versjon 1):
 ``PUT /v1/sessions/{id}/transcript``, ``DELETE /v1/sessions/{id}``
     Lagrede økter: liste (uten innhold), tekst, lyd, retting og sletting.
 
+``POST /v1/pair``
+    For klienter i nettleseren (EVIDA): ``{"code": "<engangskode>"}`` fra en
+    godkjent nettside (``--allow-origin``) gir tilgangsnøkkelen. Koden vises i
+    vinduet til tjenesten ved oppstart.
+
 ``GET /v1/audit``, ``GET /v1/audit/verify``
     Innsynsloggen og kontroll av at den ikke er endret.
 
@@ -49,9 +54,11 @@ Grensesnitt (versjon 1):
 
 import argparse
 import asyncio
+import hmac
 import io
 import json
 import logging
+import secrets
 import threading
 import time
 from dataclasses import asdict
@@ -172,6 +179,36 @@ def create_app(
                 return backend.transcribe(audio, prompt=prompt, hotwords=hotwords)
 
     shared = Locked()
+
+    # Paring: en klient i nettleseren (EVIDA) kan ikke lese nøkkelfilen. Ved
+    # oppstart lages en engangskode som vises i vinduet til tjenesten; brukeren
+    # skriver den inn i klienten, som får nøkkelen tilbake. Bare godkjente
+    # nettsider (Origin) kan pare, koden gjelder i 15 minutter, og etter fem
+    # feil forsøk er paring stengt til tjenesten startes på nytt.
+    pairing = {"code": f"{secrets.randbelow(10**8):08d}", "expires": time.time() + 15 * 60, "failures": 0, "used": False}
+    app.state.pairing = pairing
+
+    @app.post("/v1/pair")
+    async def pair(request: Request):
+        origin = request.headers.get("origin")
+        if origin not in origins:
+            audit.record("pair.denied", actor="unknown", origin=origin, reason="origin")
+            raise HTTPException(403, "denne nettsiden kan ikke kobles til talemotoren")
+        if pairing["used"] or pairing["failures"] >= 5 or time.time() > pairing["expires"]:
+            audit.record("pair.denied", actor="unknown", origin=origin, reason="closed")
+            raise HTTPException(410, "paring er stengt; start talemotoren på nytt for en ny kode")
+        try:
+            body = await request.json()
+        except ValueError:
+            body = {}
+        code = str(body.get("code", "")) if isinstance(body, dict) else ""
+        if not hmac.compare_digest(code.encode(), pairing["code"].encode()):
+            pairing["failures"] += 1
+            audit.record("pair.denied", actor="unknown", origin=origin, reason="code", failures=pairing["failures"])
+            raise HTTPException(401, "feil kode")
+        pairing["used"] = True
+        audit.record("pair.succeeded", actor=f"token:{token.fingerprint}", origin=origin)
+        return {"token": token.value}
 
     @app.get("/v1/health")
     def health():
@@ -381,6 +418,8 @@ def main(argv=None) -> int:
     url = f"http://127.0.0.1:{args.port}/#token={app.state.token.value}"
     print(f"nsb-engine kjører på http://127.0.0.1:{args.port}/  (Ctrl+C for å stoppe)")
     print(f"Tilgangsnøkkel: {app.state.paths.token}")
+    if args.allow_origin:
+        print(f"Paringskode for {', '.join(args.allow_origin)}: {app.state.pairing['code']} (gjelder i 15 minutter, én gang)")
     print(f"Lagrede økter slettes etter {args.retention_days} dager. Innsynslogg: {app.state.paths.audit}")
     if args.open:
         import threading as _t

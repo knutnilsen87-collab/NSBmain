@@ -6,7 +6,9 @@ param(
     [string]$Root = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path,
     [string]$Model = 'nb-whisper-large-distil-turbo-beta',
     [string]$Device = 'cuda',
-    [int]$Port = 8765
+    [int]$Port = 8765,
+    # Nettsider som får koble seg til (EVIDA lokalt). Paringskoden vises i vinduet.
+    [string[]]$AllowOrigin = @('http://127.0.0.1:5173', 'http://localhost:5173')
 )
 $ErrorActionPreference = 'Stop'
 Set-Location $Root
@@ -26,4 +28,5 @@ $registry = Get-Content (Join-Path $Root 'eval/results/models.json') -Raw | Conv
 $path = $registry.$Model.path
 if (-not $path -or -not (Test-Path (Join-Path $Root $path))) { Write-Host "Fant ikke modellen $Model. Kjør scripts\RUN_BENCHMARK.cmd først."; exit 1 }
 $ct = if ($Device -eq 'cpu') { 'int8' } else { 'float16' }
-& $Py -m nsb_engine.server --model $path --label $Model --device $Device --compute-type $ct --port $Port --open @args
+$originArgs = @(); foreach ($o in ($AllowOrigin | ForEach-Object { $_ -split ',' })) { if ($o.Trim()) { $originArgs += @('--allow-origin', $o.Trim()) } }
+& $Py -m nsb_engine.server --model $path --label $Model --device $Device --compute-type $ct --port $Port --open @originArgs @args
