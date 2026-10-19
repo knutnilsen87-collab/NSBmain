@@ -360,6 +360,24 @@ class StreamingRecognizer:
         return update
 
 
+def _check_alignment_heads(model_path: str) -> None:
+    """Ordtider med hoder utenfor dekoderen krasjer CTranslate2 uten feilmelding.
+    Sjekker mot Transformers-konfigurasjonen ved siden av, hvis den finnes."""
+    import json
+    from pathlib import Path
+
+    cfg, hf = Path(model_path) / "config.json", Path(model_path).parent / "hf" / "config.json"
+    if not cfg.exists() or not hf.exists():
+        return
+    layers = json.loads(hf.read_text(encoding="utf-8")).get("decoder_layers")
+    heads = json.loads(cfg.read_text(encoding="utf-8")).get("alignment_heads") or []
+    if layers and any(layer >= layers for layer, _ in heads):
+        raise ValueError(
+            f"{model_path}: ordtidshodene peker på dekoderlag som ikke finnes (modellen har {layers}). "
+            "Kjør: python scripts/download_models.py --out models/benchmark --fix-only"
+        )
+
+
 class FasterWhisperBackend:
     """Backend med faster-whisper. Samme dekoding som målestokken, med ordtider."""
 
@@ -374,6 +392,7 @@ class FasterWhisperBackend:
     ) -> None:
         from faster_whisper import WhisperModel
 
+        _check_alignment_heads(model_path)
         if device == "cpu" and compute_type == "float16":
             compute_type = "int8"
         self.model = WhisperModel(model_path, device=device, compute_type=compute_type)

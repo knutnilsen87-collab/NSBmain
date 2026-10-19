@@ -27,6 +27,27 @@ MODELS = {
 }
 
 
+def fix_alignment_heads(ct2_dir: Path, hf_dir: Path) -> bool:
+    """Retter ordtidshodene i en konvertert modell med få dekoderlag.
+
+    NB-Whisper distil-turbo har 2 dekoderlag, men generation_config.json
+    arver hodene fra large (lag 7-25). Konverteringen kopierer dem, og
+    ordtider (word_timestamps) krasjer da CTranslate2 uten feilmelding.
+    Som for distil-whisper brukes alle hodene i siste dekoderlag."""
+    cfg_path, hf_cfg_path = ct2_dir / "config.json", hf_dir / "config.json"
+    if not cfg_path.exists() or not hf_cfg_path.exists():
+        return False
+    cfg = json.loads(cfg_path.read_text(encoding="utf-8"))
+    hf_cfg = json.loads(hf_cfg_path.read_text(encoding="utf-8"))
+    layers, heads = hf_cfg.get("decoder_layers"), hf_cfg.get("decoder_attention_heads")
+    current = cfg.get("alignment_heads") or []
+    if not layers or not heads or all(layer < layers for layer, _ in current):
+        return False
+    cfg["alignment_heads"] = [[layers - 1, h] for h in range(heads)]
+    cfg_path.write_text(json.dumps(cfg, indent=2), encoding="utf-8")
+    return True
+
+
 def _has_ct2(path: Path) -> bool:
     return (path / "model.bin").exists() and (path / "config.json").exists()
 
@@ -89,6 +110,8 @@ def fetch(name: str, spec: dict, out: Path) -> dict:
              "--copy_files", "tokenizer.json", "preprocessor_config.json", "--quantization", "float16", "--force"],
             check=True,
         )
+    if fix_alignment_heads(ct2_dir, hf_dir):
+        print(f"[ok] {name}: ordtidshodene rettet til siste dekoderlag")
     return record({"name": name, "repo": spec["repo"], "revision": revision,
                    "path": str(ct2_dir.resolve()), "converted": True}, target)
 
@@ -99,9 +122,16 @@ def main(argv=None) -> int:
     ap.add_argument("--only", action="append", help="Bare disse modellene (kan gjentas)")
     ap.add_argument("--record-only", action="store_true",
                     help="Ikke last ned; legg revisjon og sha256 til modeller som allerede er lastet ned")
+    ap.add_argument("--fix-only", action="store_true",
+                    help="Ikke last ned; rett bare ordtidshodene i modeller som allerede er konvertert")
     args = ap.parse_args(argv)
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
+    if args.fix_only:
+        for name in MODELS:
+            if fix_alignment_heads(out / name / "ct2_converted", out / name / "hf"):
+                print(f"[ok] {name}: ordtidshodene rettet til siste dekoderlag")
+        return 0
     registry_path = out / "models.json"
     registry = json.loads(registry_path.read_text(encoding="utf-8")) if registry_path.exists() else {}
     if args.record_only:

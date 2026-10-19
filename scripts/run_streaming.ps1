@@ -41,6 +41,9 @@ $env:PYTHONPATH = $Root
 $env:PYTHONIOENCODING = 'utf-8'
 $env:PYTHONUTF8 = '1'
 
+# Distil-turbo arver ordtidshoder fra large som ikke finnes i dens 2 dekoderlag.
+& $Py scripts/download_models.py --out models/benchmark --fix-only *>> (Join-Path $Out 'RUN.detail.log')
+
 $registry = Get-Content (Join-Path $Root 'eval/results/models.json') -Raw | ConvertFrom-Json
 $limit = if ($Quick) { 20 } else { 0 }
 
@@ -61,6 +64,7 @@ foreach ($j in $jobs) {
     $entry = $registry.$m
     if (-not $entry -or -not (Test-Path (Join-Path $Root $entry.path))) { Write-Log "Hopper over $m (modellen finnes ikke)"; continue }
     $dir = Join-Path $Out "$name/$m"
+    if (Test-Path (Join-Path $dir 'streaming_summary.json')) { Write-Log "Ferdig fra før: $name / $m"; continue }
     $ct = if ($dev -eq 'cpu') { 'int8' } else { 'float16' }
     Write-Log "$name / $m ($dev, $n setninger)"
     & $Py -m nsb_eval.streaming_eval --root $Root --testset $ts --model $entry.path --label $m `
