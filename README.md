@@ -2,7 +2,7 @@
 
 Norsk talegjenkjenning med etterprøvbar kvalitet: en fast, åpen målestokk for norske talemodeller, et pilot-API for transkribering og verktøy for å trene og tilpasse NB-Whisper.
 
-Status oktober 2026: fase 0 (opprydding) er ferdig. Fase 1 (målestokk) er delvis ferdig; se [status krav for krav](docs/PHASE1_STATUS.md). Første måling er kjørt 2026-10-16: fem modeller på fire faste testsett, se [analysen](eval/results/ANALYSIS.md) og [tabellene](eval/results/BENCHMARK.md). NB-Whisper large distil-turbo er kandidat for diktering, men er ikke målt på juridisk diktat ennå. Godkjenningskravene står i [ACCEPTANCE_CRITERIA.md](docs/ACCEPTANCE_CRITERIA.md) (forslag). Fase 2 er startet: talemotoren `nsb-engine` med strømming, juridisk formatering og lokal tjeneste; se [ENGINE.md](docs/ENGINE.md) og [status for fase 2](docs/PHASE2_STATUS.md).
+Status oktober 2026: fase 0 (opprydding) er ferdig. Fase 1 (målestokk) er delvis ferdig; se [status krav for krav](docs/PHASE1_STATUS.md). Første måling er kjørt 2026-10-16: fem modeller på fire faste testsett, se [analysen](eval/results/ANALYSIS.md) og [tabellene](eval/results/BENCHMARK.md). NB-Whisper large distil-turbo er kandidat for diktering, men er ikke målt på juridisk diktat ennå. Godkjenningskravene står i [ACCEPTANCE_CRITERIA.md](docs/ACCEPTANCE_CRITERIA.md) (godkjent 2026-10-19). Fase 2 er startet: talemotoren `nsb-engine` med strømming, juridisk formatering og lokal tjeneste; se [ENGINE.md](docs/ENGINE.md) og [status for fase 2](docs/PHASE2_STATUS.md).
 
 ## Innhold
 

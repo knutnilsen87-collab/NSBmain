@@ -8,7 +8,7 @@ Statusverdier som i [fase 1](PHASE1_STATUS.md): **verifisert**, **venter på kj�
 | --- | --- | --- |
 | Felles talemotor (`nsb-engine`): én tjeneste, ett API, én versjonert modell | Verifisert (første versjon) | `nsb_engine/`, [ENGINE.md](ENGINE.md). HTTP og WebSocket testet med NB-Whisper small og NPSC-lyd |
 | Strømmende gjenkjenning med kort forsinkelse | Verifisert på GPU | Distil-turbo på RTX 4080: ord vises etter 0,7–0,8 s (median) og er ferdige etter knapt 2 s; strømmet tekst 1,4 pp dårligere enn setning for setning på NPSC, 2,3 pp bedre på samtale. Henger etter på CPU. Se [strømmeanalysen](../eval/results/streaming/ANALYSIS.md) |
-| Ventetid fra ord til tekst, og hvor ofte teksten endres | Målt; krav foreslått | Krav i [ACCEPTANCE_CRITERIA.md](ACCEPTANCE_CRITERIA.md) (forslag). Effekten av VAD og kortere steg på NPSC mangler (to kjøringer stoppet på en feil i faster-whisper, nå rettet) |
+| Ventetid fra ord til tekst, og hvor ofte teksten endres | Verifisert | Krav godkjent 2026-10-19 i [ACCEPTANCE_CRITERIA.md](ACCEPTANCE_CRITERIA.md); distil-turbo på RTX 4080 oppfyller alle. Effekten av VAD og kortere steg på NPSC mangler (to kjøringer stoppet på en feil i faster-whisper, nå rettet) |
 | Kontekst fra saken (navn, steder, saksnummer) | Bygget, effekt blokkert | `hotwords` i API-et. Effekten krever juridisk diktat med og uten kontekst |
 | Normalisering av juridiske uttrykk | Verifisert | `nsb_engine.legal_format`: paragraf, datoer, beløp, klokkeslett, saksnummer, dikteringskommandoer. 29 tester. Endret ikke WER på distil-turbos utdata for tre testsett |
 | Ordliste over lovnavn og fagord | Ikke startet | |
@@ -21,7 +21,7 @@ Statusverdier som i [fase 1](PHASE1_STATUS.md): **verifisert**, **venter på kj�
 
 ## Neste steg
 
-1. ~~Kjør `scripts\RUN_STREAMING_CHECK.cmd`~~ Gjort 19. oktober. Kjør det én gang til for de to manglende NPSC-kjøringene (omtrent 5 minutter), og godkjenn kravene til strømming.
+1. ~~Kjør `scripts\RUN_STREAMING_CHECK.cmd`~~ Gjort 19. oktober. Kjør det én gang til for de to manglende NPSC-kjøringene (omtrent 5 minutter), Kravene til strømming er godkjent.
 2. Prøv diktering selv med `scripts\RUN_ENGINE.cmd`.
 3. Koble EVIDA til `ws://127.0.0.1:8765/v1/stream`.
 4. Bygg sikkerhetstiltakene før noen dikterer med ekte saksopplysninger.
