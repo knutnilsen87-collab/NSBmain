@@ -314,6 +314,7 @@ def evaluate(args) -> dict:
         "real_time_factor": round(processing / max(1e-9, audio_seconds), 4),
         "max_lag_s": round(max_lag, 3),
         "final_lag_s": {"median": _pct(final_lags, 0.5), "max": _pct(final_lags, 1.0)},
+        "alignment_fallbacks": getattr(backend, "alignment_fallbacks", 0),
         "confidence": confidence_table(pairs),
         "uncertainty_signals": uncertainty_signals(all_words, all_wrong),
     }

@@ -35,7 +35,18 @@ Målt på låst test. Alle krav må være oppfylt.
 | Sanntidsfaktor, kundens maskinvare | ≤ 0,3 | 0,027 på RTX 4080; 0,64 på CPU (int8) | Teksten må komme mens advokaten snakker. Kravet nås ikke på CPU i dag |
 | Minne | Innenfor kundens maskin | 2,7 GB GPU-minne, 1,3–1,6 GB RAM | Kjører lokalt hos advokaten |
 
-Høy behandlingshastighet viser at modellen klarer å holde følge, men dokumenterer ikke god direktediktering. Ventetid fra ord til tekst og hvor ofte teksten endrer seg underveis, måles når strømming er bygget (fase 2).
+Høy behandlingshastighet viser at modellen klarer å holde følge, men dokumenterer ikke god direktediktering. Derfor stilles egne krav til strømming, målt med `nsb_eval.streaming_eval` (strømmer på ett minutt, lydbiter på 0,5 s):
+
+| Krav | Grense (forslag) | Første måling, distil-turbo på RTX 4080 (NPSC / NB Samtale) | Hvorfor |
+| --- | --- | --- | --- |
+| Ord vises på skjermen, median | ≤ 1,0 s | 0,74 / 0,81 s | Advokaten skal se at teksten følger med |
+| Ord vises, 90 % av ordene | ≤ 2,0 s | 1,45 / 1,84 s | Ingen lange stopp |
+| Ord ferdig (endres ikke mer), median | ≤ 2,5 s | 1,78 / 1,97 s | Ferdig tekst kan rettes uten at den flytter seg |
+| Største etterslep i en strøm | ≤ 1,0 s | 0,6 / 0,6 s | Motoren må ikke falle bak over tid |
+| WER strømmet mot setning for setning, samme setninger | Høyst 2 prosentpoeng dårligere | +1,4 / −2,3 pp | Strømming skal ikke koste mye nøyaktighet |
+| Ombyttede foreløpige ord per 100 ferdige | Måles, ingen grense ennå | 38 / 65 | Grensen settes etter at advokater har prøvd testsiden |
+
+Kravene gjelder maskinvaren hos kunden. På CPU oppfylles ingen av dem i dag.
 
 ## Krav for ordrett transkribering (fase 3)
 

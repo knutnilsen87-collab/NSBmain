@@ -1,0 +1,128 @@
+{
+  "schema": "nsb-streaming-v1",
+  "testset": "npsc_test_20170207",
+  "manifest_sha256": "491eab00fdd8f234d4f5b7210ff69fd97980dd7f606b53e7d9cd402c88c4e444",
+  "model": {
+    "label": "nb-whisper-large-distil-turbo-beta",
+    "path": "models/benchmark/nb-whisper-large-distil-turbo-beta/ct2_converted",
+    "revision": "5f3a904a7ff82fbf3de5c48d59edf9c59b820773",
+    "model_sha256": "3f809c867915f7bb302ab9f6a78532d9c7f055ea7a684664035d87e10b18751a",
+    "device": "cuda",
+    "compute_type": "float16",
+    "language": "no",
+    "beam_size": 5
+  },
+  "settings": {
+    "chunk": 0.5,
+    "min_step": 1.0,
+    "stream_seconds": 60.0,
+    "gap": 0.5,
+    "vad": false,
+    "endpoint_silence": 0.8
+  },
+  "started_utc": "2026-10-19T11:34:01.460059+00:00",
+  "finished_utc": "2026-10-19T11:39:41.338646+00:00",
+  "git_sha": "6c2c80ae686c752be90b4189a6a7aaa6393e031c",
+  "python": "3.11.9",
+  "platform": "Windows-10-10.0.26200-SP0",
+  "streams": 26,
+  "items": 200,
+  "audio_seconds": 1510.3,
+  "wer_streaming": 0.0976,
+  "wer_batch": 0.3316,
+  "commit_latency_s": {
+    "median": 1.781,
+    "p90": 2.759,
+    "max": 7.472
+  },
+  "display_latency_s": {
+    "median": 0.738,
+    "p90": 1.445
+  },
+  "changes_per_100_words": 37.58,
+  "real_time_factor": 0.2111,
+  "max_lag_s": 0.585,
+  "final_lag_s": {
+    "median": 0.184,
+    "max": 0.422
+  },
+  "confidence": {
+    "words": 3036,
+    "wrong": 195,
+    "error_rate": 0.0642,
+    "bins": [
+      {
+        "from": 0.0,
+        "to": 0.3,
+        "words": 15,
+        "error_rate": 0.3333
+      },
+      {
+        "from": 0.3,
+        "to": 0.5,
+        "words": 25,
+        "error_rate": 0.24
+      },
+      {
+        "from": 0.5,
+        "to": 0.7,
+        "words": 84,
+        "error_rate": 0.3333
+      },
+      {
+        "from": 0.7,
+        "to": 0.9,
+        "words": 1558,
+        "error_rate": 0.0584
+      },
+      {
+        "from": 0.9,
+        "to": 1.0,
+        "words": 1354,
+        "error_rate": 0.048
+      }
+    ],
+    "thresholds": [
+      {
+        "below": 0.3,
+        "flagged_share": 0.0049,
+        "precision": 0.3333,
+        "recall": 0.0256
+      },
+      {
+        "below": 0.5,
+        "flagged_share": 0.0132,
+        "precision": 0.275,
+        "recall": 0.0564
+      },
+      {
+        "below": 0.7,
+        "flagged_share": 0.0408,
+        "precision": 0.3145,
+        "recall": 0.2
+      }
+    ]
+  },
+  "uncertainty_signals": {
+    "probability_below_0.5": {
+      "flagged_share": 0.0132,
+      "precision": 0.275,
+      "recall": 0.0564
+    },
+    "revised": {
+      "flagged_share": 0.169,
+      "precision": 0.1131,
+      "recall": 0.2974
+    },
+    "revised_or_below_0.5": {
+      "flagged_share": 0.1789,
+      "precision": 0.1197,
+      "recall": 0.3333
+    },
+    "revised_twice": {
+      "flagged_share": 0.08,
+      "precision": 0.1193,
+      "recall": 0.1487
+    }
+  }
+}

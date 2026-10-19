@@ -194,3 +194,24 @@ def test_words_the_model_wavered_on_get_revisions():
     by_text = {w.text: w for w in rec.committed}
     assert by_text["Tiltalte"].revisions == 0
     assert (by_text.get("nektet") or by_text.get("nekta")).revisions >= 1
+
+
+def test_backend_falls_back_when_word_alignment_fails():
+    from types import SimpleNamespace
+
+    from nsb_engine.streaming import FasterWhisperBackend
+
+    class Model:
+        def transcribe(self, audio, word_timestamps, **kw):
+            if word_timestamps:
+                def broken():
+                    raise IndexError("boolean index did not match")
+                    yield  # pragma: no cover
+                return broken(), None
+            return iter([SimpleNamespace(text=" Han nektet", start=1.0, end=2.0, words=None)]), None
+
+    b = FasterWhisperBackend.__new__(FasterWhisperBackend)
+    b.model, b.language, b.beam_size, b.alignment_fallbacks = Model(), "no", 1, 0
+    words = b.transcribe(np.zeros(SAMPLE_RATE, dtype=np.float32))
+    assert [(w.text, w.start, w.end) for w in words] == [("Han", 1.0, 1.5), ("nektet", 1.5, 2.0)]
+    assert b.alignment_fallbacks == 1 and words[0].probability == 0.0

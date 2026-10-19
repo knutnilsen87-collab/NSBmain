@@ -420,10 +420,22 @@ class FasterWhisperBackend:
         self.model = WhisperModel(model_path, device=device, compute_type=compute_type)
         self.language = language
         self.beam_size = beam_size
+        self.alignment_fallbacks = 0
 
     def transcribe(self, audio: np.ndarray, prompt: str | None = None, hotwords: str | None = None) -> list[Word]:
         if len(audio) < SAMPLE_RATE // 10:
             return []
+        try:
+            return self._words(self._segments(audio, prompt, hotwords, word_timestamps=True))
+        except (IndexError, ValueError):
+            # faster-whisper 1.2.1 kan feile i ordjusteringen (find_alignment)
+            # på enkelte lydbiter. Da dekodes biten uten ordtider, og ordene får
+            # tider fordelt jevnt i segmentet. Sannsynligheten settes til 0,
+            # så ordene vises som usikre.
+            self.alignment_fallbacks += 1
+            return self._spread(self._segments(audio, prompt, hotwords, word_timestamps=False))
+
+    def _segments(self, audio, prompt, hotwords, *, word_timestamps: bool) -> list:
         segments, _ = self.model.transcribe(
             audio,
             language=self.language,
@@ -433,9 +445,13 @@ class FasterWhisperBackend:
             condition_on_previous_text=False,
             initial_prompt=prompt,
             hotwords=hotwords,
-            word_timestamps=True,
+            word_timestamps=word_timestamps,
             vad_filter=False,
         )
+        return list(segments)
+
+    @staticmethod
+    def _words(segments) -> list[Word]:
         out = []
         for seg in segments:
             for i, w in enumerate(seg.words or []):
@@ -444,4 +460,16 @@ class FasterWhisperBackend:
                     continue
                 joined = i > 0 and not raw[:1].isspace()
                 out.append(Word(raw.strip(), float(w.start), float(w.end), float(w.probability), joined))
+        return out
+
+    @staticmethod
+    def _spread(segments) -> list[Word]:
+        out = []
+        for seg in segments:
+            tokens = seg.text.split()
+            if not tokens:
+                continue
+            step = (float(seg.end) - float(seg.start)) / len(tokens)
+            for i, t in enumerate(tokens):
+                out.append(Word(t, float(seg.start) + i * step, float(seg.start) + (i + 1) * step, 0.0))
         return out

@@ -76,7 +76,9 @@ Klokken er simulert, men behandlingstiden er ekte. Resultater: `eval/results/str
 
 ## Kjente begrensninger
 
-- Ventetid og stabilitet på GPU er ikke målt ennå (kjør `RUN_STREAMING_CHECK.cmd`).
+- Krever skjermkort. På CPU henger motoren etter (distil-turbo 5,5 ganger sanntiden), fordi bufferen dekodes på nytt hvert sekund. Se [strømmeanalysen](../eval/results/streaming/ANALYSIS.md).
+- Understrekingen av usikre ord fanger bare én av ti feil eller færre. Ord uten understreking kan også være feil.
+- Mye foreløpig tekst byttes ut før den blir ferdig (38 ord per 100 på formell tale, 65 på samtale).
 - Ingen lagring, tilgangsstyring eller innsynslogg; tjenesten er ikke klar for ekte saksopplysninger.
 - Stemmestyring (kommandoer som «finn alle dokumenter der …») er ikke bygget.
 - «kl.» scores som feil av målestokkens normalisering, som ikke utvider «kl.» til «klokka». Påvirker bare målingen, ikke teksten.
