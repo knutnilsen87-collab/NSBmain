@@ -74,7 +74,7 @@ def test_streaming_matches_batch_on_real_model(speech, backend):
     assert res["commit_latency"] and max(res["commit_latency"]) < 30
 
 
-def test_server_transcribes_real_audio(speech, backend):
+def test_server_transcribes_real_audio(speech, backend, tmp_path):
     import io
     import wave
 
@@ -89,6 +89,8 @@ def test_server_transcribes_real_audio(speech, backend):
         w.setsampwidth(2)
         w.setframerate(16000)
         w.writeframes((np.clip(audio, -1, 1) * 32767).astype("<i2").tobytes())
-    client = TestClient(create_app(backend, model_label="smoke"))
+    app = create_app(backend, model_label="smoke", data_root=tmp_path, use_dpapi=False)
+    client = TestClient(app, base_url="http://127.0.0.1:8765",
+                        headers={"Authorization": f"Bearer {app.state.token.value}"})
     r = client.post("/v1/transcribe", content=buf.getvalue())
     assert r.status_code == 200 and r.json()["words"]

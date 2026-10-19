@@ -29,7 +29,7 @@ function Write-Log([string]$Message) {
 }
 
 Write-Log 'Installerer numpy, fastapi og uvicorn i .venv-bench'
-& $Py -m pip install --quiet numpy fastapi uvicorn websockets httpx *>> (Join-Path $Out 'RUN.detail.log')
+& $Py -m pip install --quiet numpy fastapi uvicorn websockets httpx cryptography *>> (Join-Path $Out 'RUN.detail.log')
 
 $site = (& $Py -c "import sysconfig; print(sysconfig.get_paths()['purelib'])").Trim()
 $sep = [System.IO.Path]::PathSeparator

@@ -35,16 +35,20 @@
   <div class="controls">
     <button id="go">Start diktering</button>
     <input id="hot" placeholder="Navn og fagord fra saken, for eksempel: Bjørdal, Giske, MED-OTIR">
+    <label class="status"><input type="checkbox" id="store" style="min-width:0;flex:none"> Lagre lyd og tekst kryptert (jeg samtykker)</label>
     <span class="status" id="status"><span class="dot"></span>stoppet</span>
   </div>
   <div class="label">Tekst</div>
   <div class="page" id="out"></div>
   <div class="label">Ord med lav sikkerhet er understreket</div>
   <div class="page" id="words"></div>
-  <p class="meta">Lyden går bare til tjenesten på denne maskinen (127.0.0.1) og lagres ikke. Si «punktum», «komma», «ny linje» eller «nytt avsnitt» for tegn og linjeskift.</p>
+  <p class="meta" id="saved"></p>
+  <p class="meta">Lyden går bare til tjenesten på denne maskinen (127.0.0.1). Den lagres bare hvis du krysser av, og da kryptert og med automatisk sletting. Si «punktum», «komma», «ny linje» eller «nytt avsnitt» for tegn og linjeskift.</p>
 </main>
 <script>
 const $ = id => document.getElementById(id);
+const TOKEN = new URLSearchParams(location.hash.slice(1)).get("token") || "";
+if (!TOKEN) document.addEventListener("DOMContentLoaded", () => $("status").textContent = "mangler tilgangsnøkkel: start med RUN_ENGINE.cmd");
 let ws, ctx, src, node, stream, running = false, committed = [], text = "", tentative = [];
 
 fetch("/v1/health").then(r => r.json()).then(h => $("model").textContent = `${h.model} · ${h.device} · v${h.version}`)
@@ -80,10 +84,11 @@ async function start() {
   await ctx.audioWorklet.addModule(URL.createObjectURL(new Blob([worklet], { type: "application/javascript" })));
   src = ctx.createMediaStreamSource(stream);
   node = new AudioWorkletNode(ctx, "pcm");
-  ws = new WebSocket(`ws://${location.host}/v1/stream`);
+  ws = new WebSocket(`ws://${location.host}/v1/stream?token=${encodeURIComponent(TOKEN)}`);
   ws.binaryType = "arraybuffer";
   ws.onopen = () => {
-    ws.send(JSON.stringify({ type: "start", hotwords: $("hot").value.trim(), format: "legal" }));
+    const store = $("store").checked;
+    ws.send(JSON.stringify({ type: "start", hotwords: $("hot").value.trim(), format: "legal", store, consent: store }));
     node.port.onmessage = e => { if (ws.readyState === 1) ws.send(e.data); };
     src.connect(node);
   };
@@ -92,7 +97,10 @@ async function start() {
     if (m.type === "update" || m.type === "final") {
       committed = committed.concat(m.committed); text = m.text; tentative = m.tentative; render();
     }
-    if (m.type === "final") ws.close();
+    if (m.type === "final") {
+      $("saved").textContent = m.session_id ? `Lagret kryptert som ${m.session_id}. Slettes automatisk ${m.expires.slice(0, 10)}.` : "";
+      ws.close();
+    }
   };
   ws.onclose = () => setRunning(false);
   setRunning(true);

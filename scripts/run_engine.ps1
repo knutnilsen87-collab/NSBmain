@@ -12,7 +12,7 @@ $ErrorActionPreference = 'Stop'
 Set-Location $Root
 $Py = Join-Path $Root '.venv-bench/Scripts/python.exe'
 if (-not (Test-Path $Py)) { Write-Host 'Fant ikke .venv-bench. Kjør scripts\RUN_BENCHMARK.cmd først.'; exit 1 }
-& $Py -m pip install --quiet numpy fastapi uvicorn websockets
+& $Py -m pip install --quiet numpy fastapi uvicorn websockets cryptography
 $site = (& $Py -c "import sysconfig; print(sysconfig.get_paths()['purelib'])").Trim()
 $sep = [System.IO.Path]::PathSeparator
 foreach ($sub in @('nvidia/cublas/bin', 'nvidia/cudnn/bin', 'nvidia/cuda_nvrtc/bin', 'nvidia/cuda_runtime/bin')) {
@@ -26,5 +26,4 @@ $registry = Get-Content (Join-Path $Root 'eval/results/models.json') -Raw | Conv
 $path = $registry.$Model.path
 if (-not $path -or -not (Test-Path (Join-Path $Root $path))) { Write-Host "Fant ikke modellen $Model. Kjør scripts\RUN_BENCHMARK.cmd først."; exit 1 }
 $ct = if ($Device -eq 'cpu') { 'int8' } else { 'float16' }
-Start-Job -ScriptBlock { param($u) Start-Sleep -Seconds 12; Start-Process $u } -ArgumentList "http://127.0.0.1:$Port/" | Out-Null
-& $Py -m nsb_engine.server --model $path --label $Model --device $Device --compute-type $ct --port $Port
+& $Py -m nsb_engine.server --model $path --label $Model --device $Device --compute-type $ct --port $Port --open @args

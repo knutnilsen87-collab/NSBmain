@@ -32,11 +32,17 @@ def pcm(seconds):
     return (np.zeros(int(seconds * SAMPLE_RATE)) + 0.01 * 32767).astype("<i2").tobytes()
 
 
+BASE = "http://127.0.0.1:8765"
+
+
 @pytest.fixture
-def client_and_backend():
+def client_and_backend(tmp_path):
     backend = CountingBackend()
-    app = create_app(backend, model_label="test", device="cpu")
-    return TestClient(app), backend
+    app = create_app(backend, model_label="test", device="cpu", data_root=tmp_path, use_dpapi=False)
+    client = TestClient(app, base_url=BASE, headers={"Authorization": f"Bearer {app.state.token.value}"})
+    client.token = app.state.token.value
+    client.app_ = app
+    return client, backend
 
 
 def test_health(client_and_backend):
@@ -53,7 +59,7 @@ def test_index_page(client_and_backend):
 
 def test_stream_gives_updates_and_formatted_final_text(client_and_backend):
     client, backend = client_and_backend
-    with client.websocket_connect("/v1/stream") as ws:
+    with client.websocket_connect(f"ws://127.0.0.1:8765/v1/stream?token={client.token}") as ws:
         ws.send_text(json.dumps({"type": "start", "hotwords": "Bjørdal", "format": "legal"}))
         updates = []
         for _ in range(16):
@@ -73,7 +79,7 @@ def test_stream_gives_updates_and_formatted_final_text(client_and_backend):
 
 def test_uncertain_words_are_marked(client_and_backend):
     client, _ = client_and_backend
-    with client.websocket_connect("/v1/stream") as ws:
+    with client.websocket_connect(f"ws://127.0.0.1:8765/v1/stream?token={client.token}") as ws:
         for _ in range(4):
             ws.send_bytes(pcm(0.25))
         ws.send_text(json.dumps({"type": "end"}))
