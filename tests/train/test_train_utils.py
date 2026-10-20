@@ -109,7 +109,9 @@ def test_fixed_testsets_are_never_in_training_manifests_by_tail():
     for m in (root / "eval" / "testsets").glob("*.jsonl"):
         for line in m.read_text(encoding="utf-8").splitlines():
             tails.add("/".join(json.loads(line)["audio"].lower().split("/")[-3:]))
-    assert len(tails) == 501 + 582 + 1195
+    # NPSC test + eval, og NB Samtale: offisiell test (1 195) og de talerdelte
+    # settene (2 444 + 1 091), som overlapper med den offisielle testen.
+    assert len(tails) == 501 + 582 + 4385
 
 
 def test_split_excludes_by_text_and_path_substring():
