@@ -17,3 +17,4 @@ Ingen data brukes til trening, test eller produkt uten en linje her med dokument
 - NB-Whisper er trent på NST, Stortinget-tale, NRK-teksting og lydbøker ([modellkort](https://huggingface.co/NbAiLab/nb-whisper-large)). Resultater på NPSC kan derfor være noe optimistiske for NB-Whisper hvis samme møter inngikk i treningen.
 - NPSCs offisielle testsplitt har fire møter; lokalt finnes lyd bare for 7. februar 2017 (501 setninger, ni talere).
 - NB Samtale-testen har 447 av 1 195 segmenter med overlappende tale. Resultatene brytes ned på dialekt og rettskrivning.
+- NB Samtales offisielle splitter (train/dev/test) er delt per segment: alle 66 talere i testsplitten finnes også i train. For trening deles korpuset i stedet i talergrupper uten felles talere (`scripts/build_finetune_dialect.py`, testsett `nb_samtale_spk_test` og `nb_samtale_spk_dev`).

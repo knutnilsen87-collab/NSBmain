@@ -11,8 +11,8 @@ Versjon 1, 2026-10-16 (strømmekrav lagt til 2026-10-19).
 | Type | Brukes til | Hva den ikke brukes til | Sett |
 | --- | --- | --- | --- |
 | Trening | Å lære modellen | Valg av checkpoint, rapportering | NPSC train, NB Samtale train, NST (filtrert), egne opptak med samtykke |
-| Validering | Valg av checkpoint, læringsrate, dekodingsinnstillinger, terskler for hallusinasjonskontroll | Godkjenning, publiserte tall | `npsc_eval_20170209`, NB Samtale dev (bygges), en egen del av juridisk diktat |
-| Låst test | Én sluttmåling per kandidat, godkjenning, publiserte tall | Alt annet | `npsc_test_20170207`, `nb_samtale_test`, `silence_v1`, juridisk diktat (test), simulerte avhør |
+| Validering | Valg av checkpoint, læringsrate, dekodingsinnstillinger, terskler for hallusinasjonskontroll | Godkjenning, publiserte tall | `npsc_eval_20170209`, `nb_samtale_spk_dev`, en egen del av juridisk diktat |
+| Låst test | Én sluttmåling per kandidat, godkjenning, publiserte tall | Alt annet | `npsc_test_20170207`, `nb_samtale_test` (bare modeller som ikke er trent på NB Samtale), `nb_samtale_spk_test`, `silence_v1`, juridisk diktat (test), simulerte avhør |
 
 Regler:
 
@@ -20,7 +20,8 @@ Regler:
 2. Låst test kjøres bare på en kandidat som er valgt ut fra valideringsdata. Hver kjøring logges i `eval/results/` med git-SHA, modellrevisjon og sjekksum.
 3. En kandidat som feiler på låst test, kan ikke justeres mot de samme testresultatene og prøves igjen. Ny kandidat må velges på validering.
 4. `npsc_eval_20170209` ble brukt som rapportert testsett i første måling. Fra versjon 1 av disse kravene er det et valideringssett.
-5. LIA brukes ikke til trening, validering, test eller publiserte tall. Lisensen (CLARIN ACA-NC-LOC-PRIV-ND) tillater ikke kommersiell bruk eller avledede verk; se [dataregisteret](DATA_REGISTER.md).
+5. NB Samtales offisielle splitter deler alle talere mellom train og test. Modeller trent på NB Samtale måles derfor på den talerdelte `nb_samtale_spk_test` (lagt til 2026-10-20, se [forsøk dialekt_v1](experiments/DIALEKT_V1.md)), ikke på `nb_samtale_test`.
+6. LIA brukes ikke til trening, validering, test eller publiserte tall. Lisensen (CLARIN ACA-NC-LOC-PRIV-ND) tillater ikke kommersiell bruk eller avledede verk; se [dataregisteret](DATA_REGISTER.md).
 
 ## Krav for pilot med diktering (fase 2)
 
