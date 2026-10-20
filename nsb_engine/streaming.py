@@ -131,6 +131,43 @@ def silero_detector(threshold: float = 0.5, min_silence_ms: int = 300) -> Speech
     return detect
 
 
+def speech_chunks(spans: Sequence[tuple[float, float]], max_chunk: float = 28.0,
+                  max_gap: float = 1.5) -> list[tuple[float, float]]:
+    """Slår sammen taleområder til biter på høyst ``max_chunk`` sekunder.
+
+    En ny bit starter ved en pause lengre enn ``max_gap`` eller når biten ville
+    blitt for lang. Et taleområde som alene er for langt, deles i like biter.
+    """
+    out: list[tuple[float, float]] = []
+    for a, b in spans:
+        while b - a > max_chunk:
+            out.append((a, a + max_chunk))
+            a += max_chunk
+        if out and a - out[-1][1] <= max_gap and b - out[-1][0] <= max_chunk:
+            out[-1] = (out[-1][0], b)
+        else:
+            out.append((a, b))
+    return out
+
+
+def transcribe_long(backend: Backend, audio: np.ndarray, detector: SpeechDetector,
+                    hotwords: str | None = None, max_chunk: float = 28.0) -> tuple[list[Word], list[tuple[float, float]]]:
+    """Dekoder et langt opptak bit for bit, bare der det er tale.
+
+    Stillhet sendes aldri til modellen, så den kan ikke dikte opp tekst i
+    pauser. Gir ordene med tider fra opptakets start, og bitene som ble dekodet.
+    """
+    pad = 0.2
+    chunks = speech_chunks(detector(audio), max_chunk=max_chunk)
+    words: list[Word] = []
+    for a, b in chunks:
+        lo = max(0, int((a - pad) * SAMPLE_RATE))
+        hi = min(len(audio), int((b + pad) * SAMPLE_RATE))
+        offset = lo / SAMPLE_RATE
+        words += [w.shifted(offset) for w in backend.transcribe(audio[lo:hi], hotwords=hotwords)]
+    return words, chunks
+
+
 class StreamingRecognizer:
     """Tar imot lyd i biter og gir ferdige og foreløpige ord.
 

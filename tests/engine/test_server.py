@@ -116,3 +116,23 @@ def test_transcribe_rejects_empty_and_garbage(client_and_backend):
     client, _ = client_and_backend
     assert client.post("/v1/transcribe", content=b"").status_code == 400
     assert client.post("/v1/transcribe", content=b"ikke lyd").status_code == 415
+
+
+def test_transcribe_long_recording_with_vad(tmp_path):
+    pytest.importorskip("faster_whisper")
+    backend = CountingBackend()
+    app = create_app(backend, model_label="test", data_root=tmp_path, use_dpapi=False,
+                     detector_factory=lambda: (lambda audio: [(1.0, 2.0), (6.0, 7.2)]))
+    client = TestClient(app, base_url=BASE, headers={"Authorization": f"Bearer {app.state.token.value}"})
+    r = client.post("/v1/transcribe?vad=true&format=none", content=_wav(10.0))
+    assert r.status_code == 200
+    body = r.json()
+    assert body["speech_chunks"] == [[1.0, 2.0], [6.0, 7.2]]
+    assert len(backend.hotwords) == 2  # stillheten mellom bitene ble aldri dekodet
+    assert min(w["start"] for w in body["words"]) >= 0.8
+
+
+def test_transcribe_vad_requires_detector(client_and_backend):
+    pytest.importorskip("faster_whisper")
+    client, _ = client_and_backend
+    assert client.post("/v1/transcribe?vad=true", content=_wav(2.0)).status_code == 400

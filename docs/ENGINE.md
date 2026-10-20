@@ -41,7 +41,7 @@ Testsiden åpnes på http://127.0.0.1:8765/ (Edge eller Chrome; Firefox støtter
 | Kall | Hva |
 | --- | --- |
 | `GET /v1/health` | Modell, enhet og versjon |
-| `POST /v1/transcribe?hotwords=…&format=legal` | Kroppen er en lydfil. Svar: `text`, `formatted`, `words` |
+| `POST /v1/transcribe?hotwords=…&format=legal&vad=true` | Kroppen er en lyd- eller videofil. Svar: `text`, `formatted`, `words`. Med `vad=true` (for lange opptak, brukes av Verity) dekodes bare tale, i biter på under 30 sekunder, og svaret har også `speech_chunks` |
 | `WS /v1/stream?token=…` | Binære meldinger med 16 kHz mono 16-bit PCM. Valgfri første melding `{"type":"start","hotwords":"…","format":"legal","store":true,"consent":true,"case_ref":"…","retention_days":7}`. Avslutt med `{"type":"end"}` |
 | `POST /v1/pair` | `{"code":"…"}` fra en godkjent nettside gir tilgangsnøkkelen (engangskode i vinduet til motoren) |
 | `GET /v1/whoami` | Sjekker at nøkkelen fortsatt gjelder |

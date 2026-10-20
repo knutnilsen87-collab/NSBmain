@@ -70,7 +70,7 @@ from nsb_engine import __version__
 from nsb_engine.legal_format import format_legal
 from nsb_engine.security import AccessToken, AuditLog, MasterKey, Paths, Vault, default_root
 from nsb_engine.sessions import SessionStore
-from nsb_engine.streaming import SAMPLE_RATE, StreamingRecognizer, Word, join_words
+from nsb_engine.streaming import SAMPLE_RATE, StreamingRecognizer, Word, join_words, transcribe_long
 
 log = logging.getLogger("nsb_engine")
 
@@ -221,7 +221,7 @@ def create_app(
 
     @app.post("/v1/transcribe")
     async def transcribe(request: Request, hotwords: str | None = None, format: str = "legal",  # noqa: A002
-                         actor: str = Depends(require_token)):
+                         vad: bool = False, actor: str = Depends(require_token)):
         body = await request.body()
         if not body:
             raise HTTPException(400, "tom lydfil")
@@ -234,7 +234,14 @@ def create_app(
         except Exception as e:  # noqa: BLE001 - ugyldig lyd fra klienten
             raise HTTPException(415, f"kunne ikke lese lyden: {type(e).__name__}") from e
         t0 = time.perf_counter()
-        words = await asyncio.to_thread(shared.transcribe, audio, None, hotwords)
+        chunks = None
+        if vad:
+            # Lange opptak (intervjuer, møter): bare tale dekodes, i biter på under 30 s.
+            if detector_factory is None:
+                raise HTTPException(400, "motoren er startet uten taledeteksjon (--no-vad)")
+            words, chunks = await asyncio.to_thread(transcribe_long, shared, audio, detector_factory(), hotwords)
+        else:
+            words = await asyncio.to_thread(shared.transcribe, audio, None, hotwords)
         seconds = time.perf_counter() - t0
         text = join_words(words)
         log.info("transcribe audio=%.1fs processing=%.2fs words=%d", len(audio) / SAMPLE_RATE, seconds, len(words))
@@ -246,6 +253,7 @@ def create_app(
             "audio_seconds": round(len(audio) / SAMPLE_RATE, 3),
             "processing_seconds": round(seconds, 3),
             "model": model_label,
+            **({"speech_chunks": [[round(a, 3), round(b, 3)] for a, b in chunks]} if chunks is not None else {}),
         }
 
     @app.websocket("/v1/stream")

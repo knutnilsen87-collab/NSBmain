@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 
 from nsb_engine.streaming import SAMPLE_RATE, StreamingRecognizer, Word, common_prefix
 
@@ -215,3 +216,31 @@ def test_backend_falls_back_when_word_alignment_fails():
     words = b.transcribe(np.zeros(SAMPLE_RATE, dtype=np.float32))
     assert [(w.text, w.start, w.end) for w in words] == [("Han", 1.0, 1.5), ("nektet", 1.5, 2.0)]
     assert b.alignment_fallbacks == 1 and words[0].probability == 0.0
+
+
+def test_speech_chunks_merge_short_gaps_and_split_long_speech():
+    from nsb_engine.streaming import speech_chunks
+
+    assert speech_chunks([(0.0, 3.0), (3.5, 6.0), (10.0, 12.0)]) == [(0.0, 6.0), (10.0, 12.0)]
+    assert speech_chunks([(0.0, 20.0), (20.5, 40.0)], max_chunk=28.0) == [(0.0, 20.0), (20.5, 40.0)]
+    assert speech_chunks([(0.0, 60.0)], max_chunk=28.0) == [(0.0, 28.0), (28.0, 56.0), (56.0, 60.0)]
+
+
+def test_transcribe_long_decodes_only_speech_with_absolute_times():
+    import numpy as np
+
+    from nsb_engine.streaming import SAMPLE_RATE, Word, transcribe_long
+
+    calls = []
+
+    class Backend:
+        def transcribe(self, audio, prompt=None, hotwords=None):
+            calls.append((len(audio) / SAMPLE_RATE, hotwords))
+            return [Word("ord", 0.3, 0.6, 0.9)]
+
+    audio = np.zeros(100 * SAMPLE_RATE, dtype=np.float32)
+    words, chunks = transcribe_long(Backend(), audio, lambda a: [(10.0, 12.0), (50.0, 51.0)], hotwords="Silje")
+    assert chunks == [(10.0, 12.0), (50.0, 51.0)]
+    assert len(calls) == 2 and all(h == "Silje" for _, h in calls)
+    assert calls[0][0] == pytest.approx(2.4)  # 0,2 s ekstra på hver side
+    assert [round(w.start, 2) for w in words] == [10.1, 50.1]
