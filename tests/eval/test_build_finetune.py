@@ -13,8 +13,8 @@ def _jsonl(path: Path, rows):
     path.write_text("".join(json.dumps(r, ensure_ascii=False) + "\n" for r in rows), encoding="utf-8")
 
 
-def _nbs(split, i, speaker, ortho="bm", text=None):
-    return {"source_file_id": f"f{i}", "segment_id": str(i), "segment_order": i, "duration": 5.0,
+def _nbs(split, i, speaker, rec, ortho="bm", text=None, dur=5.0):
+    return {"source_file_id": rec, "segment_id": str(i), "segment_order": i, "duration": dur,
             "overlap_previous": False, "overlap_next": False, "speaker_id": speaker, "gender": "m", "dialect": "w",
             "orthography": ortho, "source_type": "podcast", "file_name": f"data/{split}/{ortho}/s{i}.wav",
             "transcription": text or f"dette er setning nummer {i} i {split}"}
@@ -28,11 +28,17 @@ def _npsc(meeting, sid, speaker, lang="nb-NO", text=None):
 
 def make_root(tmp_path: Path) -> Path:
     root = tmp_path
-    nbs = [_nbs("train", i, "P1", "nn" if i % 3 == 0 else "bm") for i in range(9)]
-    nbs += [_nbs("train", 100, "P9")]  # taler som også er i test: skal ut
-    nbs += [_nbs("train", 101, "P2", text="en låst test setning med mange ord")]  # tekst fra låst test: skal ut
-    nbs += [_nbs("dev", 200 + i, "P5", "nn" if i % 2 else "bm") for i in range(6)]
-    nbs += [_nbs("test", 300, "P9")]
+    nbs = []
+    # Fem talergrupper (opptak som deler taler): A+B (største), C, D, E (minst).
+    # Gruppe A: opptak a1 og a2 deler taler P1.
+    for i in range(12):
+        nbs.append(_nbs(["train", "dev", "test"][i % 3], i, "P1" if i < 8 else "P2", "a1" if i < 6 else "a2",
+                        "nn" if i % 4 == 0 else "bm", dur=10.0))
+    nbs += [_nbs("train", 20 + i, "P3", "b1", dur=8.0) for i in range(6)]
+    nbs += [_nbs("train", 40 + i, "P4", "c1", "nn" if i % 2 else "bm", dur=6.0) for i in range(5)]
+    nbs += [_nbs("dev", 60 + i, "P5", "d1", "nn" if i % 2 else "bm", dur=5.0) for i in range(6)]
+    nbs += [_nbs("test", 80 + i, "P6", "e1", dur=2.0) for i in range(3)]
+    nbs += [_nbs("train", 99, "P3", "b1", text="en låst test setning med mange ord")]  # tekst fra låst test
     _jsonl(root / "dataset/nb_samtale/metadata.jsonl", nbs)
     base = root / "dataset/norwegian"
     for m in ("20170110", "20170207", "20170209"):
@@ -52,28 +58,40 @@ def make_root(tmp_path: Path) -> Path:
     return root
 
 
+def test_nb_samtale_is_split_without_shared_speakers(tmp_path):
+    root = make_root(tmp_path)
+    parts = bf.split_nb_samtale(bf.nb_samtale_all(root))
+    recs = {k: {r["recording"] for r in v} for k, v in parts.items()}
+    assert recs["train"] == {"a1", "a2", "b1"} and recs["test"] == {"c1", "e1"} and recs["dev"] == {"d1"}
+    spk = {k: {r["speaker_id"] for r in v} for k, v in parts.items()}
+    assert not (spk["train"] & spk["test"]) and not (spk["train"] & spk["dev"])
+
+
 def test_build_excludes_locked_speakers_meetings_and_texts(tmp_path):
     root = make_root(tmp_path)
     stats = bf.build(root, root / "out", npsc_max=10)
     train = [json.loads(line) for line in (root / "out/train.jsonl").read_text(encoding="utf-8").splitlines()]
     speakers = {r["speaker_id"] for r in train}
-    assert "nbs-P9" not in speakers and "npsc-77" not in speakers
+    assert "npsc-77" not in speakers and not speakers & {"nbs-P4", "nbs-P5", "nbs-P6"}
     assert all("20170207" not in r["audio"] and "20170315" not in r["audio"] for r in train)
     assert not any("låst test" in r["text"] for r in train)
+    assert not any(r.get("official_split") == "test" for r in train)  # offisiell testsplitt trenes aldri på
     assert {r["id"] for r in train if r["source"] == "npsc"} == {"npsc-1", "npsc-2"}
     assert {r["language"] for r in train} == {"no", "nn"}
     assert next(r for r in train if r["id"] == "npsc-2")["language"] == "nn"
-    assert stats["dropped"]["locked_speaker"] >= 1 and stats["dropped"]["locked_text"] == 1
+    assert stats["dropped"]["locked_text"] == 1 and stats["dropped"]["nb_samtale_official_test"] == 4
 
 
-def test_validation_mixes_dev_and_npsc_eval_and_writes_dev_testset(tmp_path):
+def test_validation_and_locked_test_manifests(tmp_path):
     root = make_root(tmp_path)
     bf.build(root, root / "out")
     val = [json.loads(line) for line in (root / "out/val.jsonl").read_text(encoding="utf-8").splitlines()]
     assert {r["source"] for r in val} == {"nb_samtale", "npsc_eval"}
     assert {r["language"] for r in val} == {"no", "nn"}
-    dev = (root / "eval/testsets/nb_samtale_dev.jsonl").read_text(encoding="utf-8").splitlines()
+    dev = (root / "eval/testsets/nb_samtale_spk_dev.jsonl").read_text(encoding="utf-8").splitlines()
+    test = [json.loads(line) for line in (root / "eval/testsets/nb_samtale_spk_test.jsonl").read_text(encoding="utf-8").splitlines()]
     assert len(dev) == 6 and "language" not in json.loads(dev[0])
+    assert {r["recording"] for r in test} == {"c1", "e1"} and all("standard" in r and "dialect" in r for r in test)
 
 
 def test_build_is_deterministic(tmp_path):

@@ -6,7 +6,7 @@
   1. Bygger treningsdata (NB Samtale train + NPSC train), uten låste testsett.
   2. Trener i .venv (torch med CUDA). Kan avbrytes og startes igjen; fortsetter fra siste checkpoint.
   3. Konverterer beste checkpoint til CTranslate2 og retter ordtidshodene.
-  4. Måler utgangsmodell og ny modell på VALIDERINGSSETTENE (NB Samtale dev, NPSC eval),
+  4. Måler utgangsmodell og ny modell på VALIDERINGSSETTENE (NB Samtale spk_dev, NPSC eval),
      aldri på de låste testsettene, og sammenligner med parvis bootstrap.
   Logg: runs/dialekt_v1/RUN.log. Resultater: eval/results/finetune_dialekt_v1.
 #>
@@ -102,9 +102,9 @@ foreach ($sub in @('nvidia/cublas/bin', 'nvidia/cudnn/bin', 'nvidia/cuda_nvrtc/b
 }
 $Out = Join-Path $Root "eval/results/finetune_$Name"
 $jobs = @(
-    @('nb_samtale_dev', 'distil-turbo-utgangspunkt', $BaseCt2, @()),
-    @('nb_samtale_dev', 'distil-turbo-utgangspunkt-maalform', $BaseCt2, @('--language-from-meta', 'standard')),
-    @('nb_samtale_dev', "distil-turbo-$Name", $Ct2, @('--language-from-meta', 'standard')),
+    @('nb_samtale_spk_dev', 'distil-turbo-utgangspunkt', $BaseCt2, @()),
+    @('nb_samtale_spk_dev', 'distil-turbo-utgangspunkt-maalform', $BaseCt2, @('--language-from-meta', 'standard')),
+    @('nb_samtale_spk_dev', "distil-turbo-$Name", $Ct2, @('--language-from-meta', 'standard')),
     @('npsc_eval_20170209', 'distil-turbo-utgangspunkt', $BaseCt2, @()),
     @('npsc_eval_20170209', "distil-turbo-$Name", $Ct2, @())
 )
@@ -117,7 +117,7 @@ foreach ($j in $jobs) {
         --group-by dialect --group-by standard --out-dir $dir @extra *>> $Detail
     if ($LASTEXITCODE -ne 0) { Write-Log "FEIL i måling av $label på $ts (se RUN.detail.log)" }
 }
-foreach ($ts in @('nb_samtale_dev', 'npsc_eval_20170209')) {
+foreach ($ts in @('nb_samtale_spk_dev', 'npsc_eval_20170209')) {
     & $Bench -m nsb_eval.compare --results $Out --testset $ts --baseline distil-turbo-utgangspunkt *>> (Join-Path $Out "compare_$ts.txt")
 }
 & $Bench -m nsb_eval.report --results eval/results --out eval/results/BENCHMARK.md *>> $Detail
