@@ -121,7 +121,10 @@ class JsonlAudioIterable(IterableDataset):
     med et nytt, deterministisk frø for hver gjennomgang (epoke)."""
 
     def __init__(self, jsonl_path: str, processor: WhisperProcessor, max_rows: Optional[int] = None,
-                 shuffle_size: int = 0, seed: int = 42, dictation: str = "symbol", stats: Optional[dict] = None):
+                 shuffle_size: int = 0, seed: int = 42, dictation: str = "symbol", stats: Optional[dict] = None,
+                 default_language: str = "no", only_language: Optional[str] = None):
+        self.default_language = default_language
+        self.only_language = only_language  # brukes for validering per språk
         self.jsonl_path = jsonl_path
         self.processor = processor
         self.max_rows = max_rows
@@ -157,6 +160,8 @@ class JsonlAudioIterable(IterableDataset):
             self.rows_consumed += 1
             if self.rows_consumed <= skip:
                 continue  # samme deterministiske rekkefølge som før avbruddet
+            if self.only_language and (row.get("language") or self.default_language) != self.only_language:
+                continue
             audio_path = row.get("audio") or row.get("path") or row.get("audio_path") or row.get("audio_filepath")
             raw_text = row.get("text") or row.get("transcript") or row.get("sentence")
             if not audio_path:
@@ -180,8 +185,10 @@ class JsonlAudioIterable(IterableDataset):
                 continue
 
             inputs = self.processor.feature_extractor(wav, sampling_rate=sr, return_tensors="pt")
-            # Tokenizeren har språk/oppgave som prefiks (set_prefix_tokens i main).
-            label_ids = self.processor.tokenizer(text).input_ids
+            # Språktoken per rad (``language``: no/nn) hvis manifestet har det,
+            # ellers språket satt i main. Nynorsk trenes da med <|nn|>.
+            language = row.get("language") or self.default_language
+            label_ids = labels_for(self.processor.tokenizer, text, language)
             if len(label_ids) > 448:  # Whispers maks dekoderlengde
                 self._bump("skip_label_too_long")
                 continue
@@ -191,6 +198,30 @@ class JsonlAudioIterable(IterableDataset):
                 "input_features": inputs.input_features[0],
                 "labels": torch.tensor(label_ids, dtype=torch.long),
             }
+
+def labels_for(tokenizer, text: str, language: str) -> list:
+    """Etikett med <|startoftranscript|><|språk|><|transcribe|><|notimestamps|> først
+    og <|endoftext|> sist. Prefikset settes per kall, siden språket kan variere."""
+    if getattr(tokenizer, "language", None) != language:
+        tokenizer.set_prefix_tokens(language=language, task="transcribe")
+    return tokenizer(text).input_ids
+
+
+def freeze_encoder(model, layers: int) -> int:
+    """Fryser konvolusjonene, posisjonene og de nederste ``layers`` lagene i
+    koderen. Gir færre parametre å trene (og plass til en stor koder på 16 GB),
+    mens de øverste lagene og dekoderen lærer dialekt og skrivemåte.
+    Returnerer antall trenbare parametre."""
+    enc = model.model.encoder
+    if layers > 0:
+        for module in (enc.conv1, enc.conv2, enc.embed_positions):
+            for p in module.parameters():
+                p.requires_grad = False
+        for layer in enc.layers[:layers]:
+            for p in layer.parameters():
+                p.requires_grad = False
+    return sum(p.numel() for p in model.parameters() if p.requires_grad)
+
 
 # -------------------- Collator
 @dataclass
@@ -282,11 +313,13 @@ def evaluate_wer(model, processor, val_loader, device, language: str) -> dict:
     model.eval()
     total = EditCounts()
     n = 0
+    dtype = next(p for p in model.parameters()).dtype
     with torch.no_grad():
         for batch in val_loader:
-            feats = batch["input_features"].to(device)
+            feats = batch["input_features"].to(device, dtype=dtype)
             labels = batch["labels"].detach().cpu().numpy()
-            gen = model.generate(input_features=feats, language=language, task="transcribe", max_new_tokens=225)
+            gen = model.generate(input_features=feats, language=language, task="transcribe", max_new_tokens=225,
+                                 use_cache=True)
             pred_str = processor.tokenizer.batch_decode(gen, skip_special_tokens=True)
             labels = np.where(labels == -100, processor.tokenizer.pad_token_id, labels)
             ref_str = processor.tokenizer.batch_decode(labels, skip_special_tokens=True)
@@ -295,6 +328,18 @@ def evaluate_wer(model, processor, val_loader, device, language: str) -> dict:
                 n += 1
     model.train()
     return {"wer": total.error_rate if total.reference_length else None, "items": n, **total.to_dict()}
+
+
+def evaluate_languages(model, processor, loaders: dict, device) -> dict:
+    """WER per språk og samlet (ordvektet), for valg av beste checkpoint."""
+    per = {lang: evaluate_wer(model, processor, loader, device, lang) for lang, loader in loaders.items()}
+    errors = sum(v["errors"] for v in per.values() if v["items"])
+    ref = sum(v["reference_length"] for v in per.values() if v["items"])
+    out = {"wer": errors / ref if ref else None, "items": sum(v["items"] for v in per.values())}
+    for lang, v in per.items():
+        out[f"wer_{lang}"] = v["wer"]
+        out[f"items_{lang}"] = v["items"]
+    return out
 
 
 def rotate_checkpoints(ckpt_root: str, keep_last: int):
@@ -335,6 +380,15 @@ def main():
     ap.add_argument("--limit_train", type=int, default=None)
     ap.add_argument("--limit_val", type=int, default=None)
     ap.add_argument("--resume", action="store_true", help="Auto-resume from latest checkpoint in out_dir")
+    ap.add_argument("--bf16", action="store_true", help="bfloat16 autocast (RTX 30/40), uten GradScaler")
+    ap.add_argument("--eval_at_start", action="store_true",
+                    help="Valider før første steg (steg 0), så utgangsmodellen er sammenligningsgrunnlaget")
+    ap.add_argument("--grad_accum", type=int, default=1, help="Akkumuler gradienter over så mange batcher")
+    ap.add_argument("--freeze_encoder_layers", type=int, default=0, help="Frys de nederste N lagene i koderen")
+    ap.add_argument("--gradient_checkpointing", action="store_true")
+    ap.add_argument("--spec_augment", action="store_true", help="SpecAugment (maskering i tid og frekvens) under trening")
+    ap.add_argument("--val_languages", default=None,
+                    help="Kommaseparerte språk (for eksempel no,nn): validering per språk med riktig språktoken")
     args = ap.parse_args()
     validate_out_dir(args.out_dir)
     if args.limit_val is None:
@@ -354,15 +408,29 @@ def main():
     device = "cuda" if torch.cuda.is_available() else "cpu"
     processor = WhisperProcessor.from_pretrained(args.model_name)
     processor.tokenizer.set_prefix_tokens(language=args.language, task="transcribe")
-    model = WhisperForConditionalGeneration.from_pretrained(args.model_name).to(device)
+    model = WhisperForConditionalGeneration.from_pretrained(args.model_name)
+    if args.spec_augment:
+        model.config.apply_spec_augment = True
+        model.config.mask_time_prob = 0.05
+        model.config.mask_feature_prob = 0.05
+    trainable = freeze_encoder(model, args.freeze_encoder_layers)
+    if args.gradient_checkpointing:
+        model.config.use_cache = False
+        model.gradient_checkpointing_enable()
+    model = model.to(device)
+    log_state(args.out_dir, phase="INIT", trainable_parameters=int(trainable),
+              total_parameters=int(sum(p.numel() for p in model.parameters())))
     model.generation_config.language = args.language
     model.generation_config.task = "transcribe"
     model.generation_config.forced_decoder_ids = None
     model.config.forced_decoder_ids = None
     model.train()
 
-    scaler = torch.cuda.amp.GradScaler(enabled=(args.fp16 and device == "cuda"))
-    optim = torch.optim.AdamW(model.parameters(), lr=args.lr)
+    use_fp16 = args.fp16 and not args.bf16 and device == "cuda"
+    amp_dtype = torch.bfloat16 if args.bf16 else torch.float16
+    use_amp = device == "cuda" and (args.fp16 or args.bf16)
+    scaler = torch.cuda.amp.GradScaler(enabled=use_fp16)
+    optim = torch.optim.AdamW([p for p in model.parameters() if p.requires_grad], lr=args.lr)
     sched = get_linear_schedule_with_warmup(
         optim, num_warmup_steps=args.warmup_steps, num_training_steps=args.max_steps
     )
@@ -370,8 +438,8 @@ def main():
     data_stats = {}
     train_ds = JsonlAudioIterable(args.train_jsonl, processor, max_rows=args.limit_train,
                                   shuffle_size=args.shuffle_size, seed=args.seed, dictation=args.dictation,
-                                  stats=data_stats)
-    val_ds   = JsonlAudioIterable(args.val_jsonl, processor, max_rows=args.limit_val, dictation=args.dictation)
+                                  stats=data_stats, default_language=args.language)
+    val_languages = [x.strip() for x in args.val_languages.split(",")] if args.val_languages else [args.language]
     collate  = Collator(processor, model.config.decoder_start_token_id)
     best_wer = None
     best_path = os.path.join(args.out_dir, "best_metrics.json")
@@ -379,7 +447,13 @@ def main():
         best_wer = json.loads(open(best_path, encoding="utf-8").read()).get("wer")
 
     train_loader = DataLoader(train_ds, batch_size=args.batch_size, num_workers=0, collate_fn=collate)
-    val_loader   = DataLoader(val_ds, batch_size=args.batch_size, num_workers=0, collate_fn=collate)
+    val_loaders = {
+        lang: DataLoader(
+            JsonlAudioIterable(args.val_jsonl, processor, max_rows=args.limit_val, dictation=args.dictation,
+                               default_language=args.language, only_language=lang if args.val_languages else None),
+            batch_size=args.batch_size, num_workers=0, collate_fn=collate)
+        for lang in val_languages
+    }
 
     metrics_path = os.path.join(args.out_dir, "metrics.jsonl")
 
@@ -403,6 +477,12 @@ def main():
 
     step = start_step
     it = iter(train_loader)
+    if args.eval_at_start and step == 0 and best_wer is None:
+        ev = evaluate_languages(model, processor, val_loaders, device)
+        processor.tokenizer.set_prefix_tokens(language=args.language, task="transcribe")
+        append_jsonl(metrics_path, {"ts_utc": utc_ts(), "step": 0, **ev, "baseline": True})
+        atomic_write(os.path.join(args.out_dir, "baseline_metrics.json"), json.dumps({"step": 0, **ev}, ensure_ascii=False, indent=2))
+        log_state(args.out_dir, phase="TRAIN", baseline_wer=ev["wer"])
 
     # tqdm progressbar (steps)
     pbar = tqdm(total=args.max_steps, initial=step, dynamic_ncols=True)
@@ -417,20 +497,21 @@ def main():
             time.sleep(2)
             continue
 
-        try:
-            batch = next(it)
-        except StopIteration:
-            it = iter(train_loader)
-            batch = next(it)
+        for _ in range(args.grad_accum):
+            try:
+                batch = next(it)
+            except StopIteration:
+                it = iter(train_loader)
+                batch = next(it)
 
-        feats = batch["input_features"].to(device)
-        labels = batch["labels"].to(device)
+            feats = batch["input_features"].to(device)
+            labels = batch["labels"].to(device)
 
-        with torch.cuda.amp.autocast(enabled=(args.fp16 and device == "cuda")):
-            out = model(input_features=feats, labels=labels)
-            loss = out.loss
+            with torch.autocast(device_type="cuda", dtype=amp_dtype, enabled=use_amp):
+                out = model(input_features=feats, labels=labels)
+                loss = out.loss / args.grad_accum
 
-        scaler.scale(loss).backward()
+            scaler.scale(loss).backward()
         scaler.step(optim)
         scaler.update()
         optim.zero_grad(set_to_none=True)
@@ -440,12 +521,12 @@ def main():
         pbar.update(1)
 
         # Update "examples remaining" estimate within current epoch
-        examples_seen_in_epoch = (examples_seen_in_epoch + args.batch_size) % max(train_total, 1)
+        examples_seen_in_epoch = (examples_seen_in_epoch + args.batch_size * args.grad_accum) % max(train_total, 1)
         remaining = (train_total - examples_seen_in_epoch) if train_total > 0 else 0
 
         # Update tqdm postfix (ETA comes from tqdm)
         pbar.set_postfix({
-            "loss": f"{float(loss.detach().cpu().item()):.4f}",
+            "loss": f"{float(loss.detach().cpu().item()) * args.grad_accum:.4f}",
             "seen": f"{examples_seen_in_epoch}/{train_total}",
             "remain": remaining
         })
@@ -469,11 +550,12 @@ def main():
             last_state_write = now
         # Structured metrics (crash-safe append)
         if step % args.logging_steps == 0:
-            append_jsonl(metrics_path, {"ts_utc": utc_ts(), "step": step, "loss": float(loss.detach().cpu().item())})
+            append_jsonl(metrics_path, {"ts_utc": utc_ts(), "step": step, "loss": float(loss.detach().cpu().item()) * args.grad_accum})
 
         # Periodic eval
         if step % args.eval_steps == 0:
-            ev = evaluate_wer(model, processor, val_loader, device, args.language)
+            ev = evaluate_languages(model, processor, val_loaders, device)
+            processor.tokenizer.set_prefix_tokens(language=args.language, task="transcribe")
             append_jsonl(metrics_path, {"ts_utc": utc_ts(), "step": step, **ev, "data": dict(data_stats)})
             if ev["wer"] is not None and (best_wer is None or ev["wer"] < best_wer):
                 best_wer = ev["wer"]
