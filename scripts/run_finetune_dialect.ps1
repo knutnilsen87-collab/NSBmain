@@ -4,7 +4,7 @@
 
 .DESCRIPTION
   1. Bygger treningsdata (NB Samtale train + NPSC train), uten låste testsett.
-  2. Trener i .venv (torch med CUDA). Kan avbrytes og startes igjen; fortsetter fra siste checkpoint.
+  2. Trener i .venv-train (lages første gang, torch med CUDA). Kan avbrytes og startes igjen; fortsetter fra siste checkpoint.
   3. Konverterer beste checkpoint til CTranslate2 og retter ordtidshodene.
   4. Måler utgangsmodell og ny modell på VALIDERINGSSETTENE (NB Samtale spk_dev, NPSC eval),
      aldri på de låste testsettene, og sammenligner med parvis bootstrap.
@@ -41,30 +41,48 @@ $env:PYTHONIOENCODING = 'utf-8'
 $env:PYTHONUTF8 = '1'
 $env:PYTHONPATH = "$Root;$(Join-Path $Root 'src/python')"
 $env:HF_HUB_OFFLINE = '1'
-$Train = Join-Path $Root '.venv/Scripts/python.exe'
 $Bench = Join-Path $Root '.venv-bench/Scripts/python.exe'
-if (-not (Test-Path $Train)) { Stop-WithError 'Fant ikke .venv (treningsmiljøet med torch).' }
 if (-not (Test-Path $Bench)) { Stop-WithError 'Fant ikke .venv-bench. Kjør scripts\RUN_BENCHMARK.cmd først.' }
 $Base = Join-Path $Root 'models/benchmark/nb-whisper-large-distil-turbo-beta/hf'
 $BaseCt2 = Join-Path $Root 'models/benchmark/nb-whisper-large-distil-turbo-beta/ct2_converted'
 if (-not (Test-Path (Join-Path $Base 'model.safetensors'))) { Stop-WithError "Fant ikke $Base" }
 
-# ---------- 0. Miljø
-Write-Log 'Sjekker treningsmiljøet'
-& $Train -m pip install --quiet soundfile "ctranslate2==4.8.3" *>> $Detail
-$cuda = (& $Train -c "import torch; print(torch.cuda.is_available(), torch.cuda.get_device_name(0) if torch.cuda.is_available() else '')").Trim()
+# ---------- 0. Treningsmiljø (.venv-train)
+# De gamle miljøene .venv og .venv311 peker på Python-installasjoner som ikke
+# finnes lenger. Treningen får sitt eget miljø, laget fra samme Python 3.11
+# som .venv-bench, med torch for CUDA.
+$TrainVenv = Join-Path $Root '.venv-train'
+$Train = Join-Path $TrainVenv 'Scripts/python.exe'
+if (-not (Test-Path $Train)) {
+    Write-Log 'Lager .venv-train med Python 3.11'
+    & py -3.11 -m venv $TrainVenv *>> $Detail
+    if (-not (Test-Path $Train)) { Stop-WithError "Kunne ikke lage .venv-train med 'py -3.11'" }
+}
+$ok = (& $Train -c "import torch, transformers, librosa, soundfile, ctranslate2; print('ok')" 2>$null)
+if ("$ok".Trim() -ne 'ok') {
+    Write-Log 'Installerer torch med CUDA, transformers og lydbiblioteker (omtrent 3 GB, kan ta 10-20 minutter)'
+    & $Train -m pip install --upgrade pip *>> $Detail
+    & $Train -m pip install torch --index-url https://download.pytorch.org/whl/cu126 *>> $Detail
+    if ($LASTEXITCODE -ne 0) { Stop-WithError 'Kunne ikke installere torch (se RUN.detail.log)' }
+    & $Train -m pip install "transformers>=4.57" safetensors numpy tqdm soundfile librosa "ctranslate2==4.8.3" *>> $Detail
+    if ($LASTEXITCODE -ne 0) { Stop-WithError 'Kunne ikke installere transformers m.m. (se RUN.detail.log)' }
+}
+$cuda = "$(& $Train -c "import torch; print(torch.cuda.is_available(), torch.cuda.get_device_name(0) if torch.cuda.is_available() else '')")".Trim()
 Write-Log "torch CUDA: $cuda"
-if (-not $cuda.StartsWith('True')) { Stop-WithError 'torch finner ikke skjermkortet i .venv' }
+if (-not $cuda.StartsWith('True')) { Stop-WithError 'torch finner ikke skjermkortet i .venv-train' }
 
 # ---------- 1. Data
 $Data = Join-Path $Root "data/finetune/$Name"
-if (-not (Test-Path (Join-Path $Data 'train.jsonl'))) {
-    Write-Log 'Bygger treningsdata'
+# Bygg på nytt hvis dataene mangler eller er laget av en eldre versjon av byggeskriptet.
+$want = "$(& $Train -c "import sys; sys.path.insert(0, 'scripts'); import build_finetune_dialect as b; print(b.BUILDER_VERSION)")".Trim()
+$have = "$(& $Train -c "import json,sys; print(json.load(open(sys.argv[1], encoding='utf-8')).get('builder_version', 1))" (Join-Path $Data 'stats.json') 2>$null)".Trim()
+if (-not (Test-Path (Join-Path $Data 'train.jsonl')) -or $want -ne $have) {
+    Write-Log "Bygger treningsdata (versjon $want)"
     & $Train scripts/build_finetune_dialect.py --root $Root --out $Data *>> $Detail
     if ($LASTEXITCODE -ne 0) { Stop-WithError 'Kunne ikke bygge treningsdata (se RUN.detail.log)' }
 }
-$stats = Get-Content (Join-Path $Data 'stats.json') -Raw | ConvertFrom-Json
-Write-Log ("Trening: {0} segmenter ({1}), validering: {2}" -f $stats.train.rows, (($stats.train.by_language | ConvertTo-Json -Compress)), $stats.val.rows)
+$summary = "$(& $Train -c "import json,sys; s=json.load(open(sys.argv[1], encoding='utf-8')); print('Trening: %d segmenter (nynorsk %d), validering: %d' % (s['train']['rows'], s['train']['by_language'].get('nn', 0), s['val']['rows']))" (Join-Path $Data 'stats.json'))"
+Write-Log $summary
 
 # ---------- 2. Trening
 if (-not $SkipTrain) {
@@ -79,8 +97,8 @@ if (-not $SkipTrain) {
 }
 $best = Join-Path $Run 'best'
 if (-not (Test-Path (Join-Path $best 'config.json'))) { Stop-WithError 'Fant ikke beste checkpoint' }
-$bm = Get-Content (Join-Path $Run 'best_metrics.json') -Raw | ConvertFrom-Json
-$b0 = Get-Content (Join-Path $Run 'baseline_metrics.json') -Raw | ConvertFrom-Json
+$bm = Get-Content (Join-Path $Run 'best_metrics.json') -Raw -Encoding UTF8 | ConvertFrom-Json
+$b0 = Get-Content (Join-Path $Run 'baseline_metrics.json') -Raw -Encoding UTF8 | ConvertFrom-Json
 Write-Log ("Validering under trening: utgangsmodell {0:P1} (bokmål {1:P1}, nynorsk {2:P1}); beste steg {3}: {4:P1} (bokmål {5:P1}, nynorsk {6:P1})" -f `
     $b0.wer, $b0.wer_no, $b0.wer_nn, $bm.step, $bm.wer, $bm.wer_no, $bm.wer_nn)
 

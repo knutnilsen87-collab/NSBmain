@@ -80,6 +80,12 @@ def test_build_excludes_locked_speakers_meetings_and_texts(tmp_path):
     assert {r["language"] for r in train} == {"no", "nn"}
     assert next(r for r in train if r["id"] == "npsc-2")["language"] == "nn"
     assert stats["dropped"]["locked_text"] == 1 and stats["dropped"]["nb_samtale_official_test"] == 4
+    assert stats["builder_version"] == bf.BUILDER_VERSION
+    # Samme dialektnavn i begge kilder; nøkler som bare skiller seg på store/små bokstaver
+    # knekker ConvertFrom-Json i PowerShell 5.1.
+    assert next(r for r in train if r["id"] == "npsc-1")["dialect"] == "vest"
+    keys = list(stats["train"]["by_dialect"])
+    assert len({k.lower() for k in keys}) == len(keys)
 
 
 def test_validation_and_locked_test_manifests(tmp_path):

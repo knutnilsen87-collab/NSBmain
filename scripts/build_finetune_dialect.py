@@ -49,6 +49,11 @@ from nsb_eval.normalize import normalize  # noqa: E402
 
 LOCKED_NPSC_MEETINGS = {"20170207", "20170209"}
 NB_DIALECT = {"e": "øst", "w": "vest", "sw": "sørvest", "t": "trøndelag", "n": "nord"}
+# Øk når utdataene endres; kjøreskriptet bygger da dataene på nytt.
+BUILDER_VERSION = 2
+# NPSC bruker engelske navn; samme navn som NB Samtale gjør tellingene sammenlignbare.
+NPSC_DIALECT = {"Eastern Norway": "øst", "Western Norway": "vest", "Northern Norway": "nord",
+                "Trøndelag": "trøndelag", "Southern Norway": "sør", "unclear": "ukjent"}
 
 
 def _jsonl(path: Path):
@@ -157,7 +162,7 @@ def npsc_train(root: Path, locked_speakers: set[str]) -> list[dict]:
             "language": "nn" if nn else "no",
             "standard": "nn" if nn else "bm",
             "speaker_id": f"npsc-{d['speaker_id']}",
-            "dialect": d["speaker_dialect"],
+            "dialect": NPSC_DIALECT.get(d["speaker_dialect"], d["speaker_dialect"]),
             "source": "npsc",
         })
     return rows
@@ -248,7 +253,7 @@ def build(root: Path, out: Path, npsc_max: int = 10000, seed: int = 42) -> dict:
         }
 
     stats = {
-        "seed": seed, "npsc_max": npsc_max, "train": summary(train), "val": summary(val),
+        "builder_version": BUILDER_VERSION, "seed": seed, "npsc_max": npsc_max, "train": summary(train), "val": summary(val),
         "nb_samtale_groups": {k: {"segments": len(v), "recordings": len({r["recording"] for r in v}),
                                   "speakers": len({r["speaker_id"] for r in v}),
                                   "hours": round(sum(r["duration"] for r in v) / 3600, 2),
