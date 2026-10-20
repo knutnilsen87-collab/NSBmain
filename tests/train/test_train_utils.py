@@ -127,3 +127,26 @@ def test_split_excludes_by_text_and_path_substring():
     assert summary["excluded_path_match"] == 1
     kept = {r["audio"] for p in parts.values() for r in p}
     assert "F:/annet/sted/kopi_av_testlyd.wav" not in kept and "F:/npsc/20170207/audio/x.wav" not in kept
+
+
+def test_replace_with_retry_survives_short_windows_lock(tmp_path, monkeypatch):
+    import os
+    import sys
+
+    sys.path.insert(0, "src/python")
+    import train_whisper_iterable as t
+
+    src, dst = tmp_path / "a.tmp", tmp_path / "a"
+    src.write_text("ny")
+    real = os.replace
+    calls = {"n": 0}
+
+    def flaky(a, b):
+        calls["n"] += 1
+        if calls["n"] < 3:
+            raise PermissionError("[WinError 5] Ingen tilgang")
+        real(a, b)
+
+    monkeypatch.setattr(t.os, "replace", flaky)
+    t.replace_with_retry(str(src), str(dst), wait=0)
+    assert dst.read_text() == "ny" and calls["n"] == 3

@@ -38,12 +38,29 @@ from nsb_eval.normalize import normalize  # noqa: E402
 def utc_ts():
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
+def replace_with_retry(src: str, dst: str, tries: int = 20, wait: float = 0.5):
+    """``os.replace`` som tåler at Windows holder fila et øyeblikk.
+
+    Antivirus, søkeindeksering og synkronisering (OneDrive, Google Drive) kan
+    låse en fil i noen sekunder; da gir ``os.replace`` «[WinError 5] Ingen
+    tilgang». Et slikt kortvarig hinder skal ikke stoppe en treningskjøring.
+    """
+    for i in range(tries):
+        try:
+            os.replace(src, dst)
+            return
+        except PermissionError:
+            if i == tries - 1:
+                raise
+            time.sleep(wait * (1 + i))
+
+
 def atomic_write(path: str, text: str):
     os.makedirs(os.path.dirname(path), exist_ok=True)
     tmp = path + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
         f.write(text)
-    os.replace(tmp, path)
+    replace_with_retry(tmp, path)
 
 def append_jsonl(path: str, obj: dict):
     os.makedirs(os.path.dirname(path), exist_ok=True)
@@ -55,11 +72,16 @@ def log_state(out_dir: str, **fields):
     base = {}
     if os.path.exists(p):
         try:
-            base = json.loads(open(p, "r", encoding="utf-8").read())
+            with open(p, "r", encoding="utf-8") as f:
+                base = json.loads(f.read())
         except Exception:
             base = {}
     base.update({"ts_utc": utc_ts(), **fields})
-    atomic_write(p, json.dumps(base, ensure_ascii=False, indent=2))
+    try:
+        atomic_write(p, json.dumps(base, ensure_ascii=False, indent=2))
+    except PermissionError as e:
+        # state.json er bare en statuslogg; treningen fortsetter uten den.
+        print(f"[advarsel] kunne ikke skrive {p}: {e}", flush=True)
 
 def count_jsonl_lines(path: str) -> int:
     # fast enough for ~hundreds of thousands of lines
@@ -277,7 +299,7 @@ def save_ckpt(out_dir: str, step: int, model, processor, optim, sched, scaler, d
     state["data_pos"] = data_pos or {}
     torch.save(state, os.path.join(ckpt_dir, "train_state.pt"))
     shutil.rmtree(final_dir, ignore_errors=True)
-    os.replace(ckpt_dir, final_dir)
+    replace_with_retry(ckpt_dir, final_dir)
 
 def load_ckpt(ckpt_dir: str, model, processor, optim, sched, scaler) -> tuple:
     # Load model/processor from same ckpt dir
