@@ -152,7 +152,9 @@ def test_replace_with_retry_survives_short_windows_lock(tmp_path, monkeypatch):
     assert dst.read_text() == "ny" and calls["n"] == 3
 
 
-def test_save_best_keeps_previous_model_when_saving_fails(tmp_path):
+def test_save_best_writes_new_dir_and_never_renames(tmp_path):
+    import json
+    import os
     import sys
 
     sys.path.insert(0, "src/python")
@@ -160,21 +162,20 @@ def test_save_best_keeps_previous_model_when_saving_fails(tmp_path):
 
     class Ok:
         def save_pretrained(self, d, **kw):
-            import os
-
             os.makedirs(d, exist_ok=True)
-            open(os.path.join(d, "model.safetensors"), "w").write("ny")
+            open(os.path.join(d, "model.safetensors"), "w").write("x")
 
     class Fails:
         def save_pretrained(self, d, **kw):
             raise OSError("disk")
 
     proc = Ok()
-    assert t.save_best(str(tmp_path), Ok(), proc)
-    assert (tmp_path / "best" / "model.safetensors").read_text() == "ny"
-    (tmp_path / "best" / "model.safetensors").write_text("gammel")
-    assert not t.save_best(str(tmp_path), Fails(), proc)
-    assert (tmp_path / "best" / "model.safetensors").read_text() == "gammel"
-    assert t.save_best(str(tmp_path), Ok(), proc)
-    assert (tmp_path / "best" / "model.safetensors").read_text() == "ny"
-    assert not (tmp_path / "best.old").exists() and not (tmp_path / "best.tmp").exists()
+    (tmp_path / "best").mkdir()  # fra eldre kjøringer
+    assert t.save_best(str(tmp_path), 250, Ok(), proc) == "best-step-250"
+    assert not (tmp_path / "best").exists()
+    assert t.save_best(str(tmp_path), 500, Fails(), proc) is None
+    assert (tmp_path / "best-step-250").is_dir() and not (tmp_path / "best-step-500").exists()
+    assert t.save_best(str(tmp_path), 750, Ok(), proc) == "best-step-750"
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["best-step-750"]
+    (tmp_path / "best_metrics.json").write_text(json.dumps({"dir": "best-step-750"}))
+    assert t.best_dir(str(tmp_path)).endswith("best-step-750")

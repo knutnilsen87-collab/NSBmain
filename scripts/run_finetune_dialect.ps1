@@ -105,7 +105,7 @@ if (-not $SkipTrain) {
         Start-Sleep -Seconds 30
     }
 }
-$best = Join-Path $Run 'best'
+$best = "$(& $Train -c "import sys; sys.path.insert(0, 'src/python'); from train_whisper_iterable import best_dir; print(best_dir(sys.argv[1]))" $Run)".Trim()
 if (-not (Test-Path (Join-Path $best 'config.json'))) { Stop-WithError 'Fant ikke beste checkpoint' }
 $bm = Get-Content (Join-Path $Run 'best_metrics.json') -Raw -Encoding UTF8 | ConvertFrom-Json
 $b0 = Get-Content (Join-Path $Run 'baseline_metrics.json') -Raw -Encoding UTF8 | ConvertFrom-Json
@@ -116,6 +116,8 @@ Write-Log ("Validering under trening: utgangsmodell {0:P1} (bokmål {1:P1}, nyno
 $Ct2 = Join-Path $Root "models/finetuned/$Name/ct2"
 if (-not (Test-Path (Join-Path $Ct2 'model.bin'))) {
     Write-Log 'Konverterer til CTranslate2'
+    # transformers 5 lagrer ikke preprocessor_config.json; den er lik utgangsmodellens (128 mel-bånd).
+    if (-not (Test-Path (Join-Path $best 'preprocessor_config.json'))) { Copy-Item (Join-Path $Base 'preprocessor_config.json') $best }
     # Via python -m: .venv ble flyttet, og .exe-oppstarterne peker på den gamle stien.
     & $Train -m ctranslate2.converters.transformers --model $best --output_dir $Ct2 --copy_files tokenizer.json preprocessor_config.json --quantization float16 --force *>> $Detail
     if ($LASTEXITCODE -ne 0) { Stop-WithError 'Konverteringen feilet' }

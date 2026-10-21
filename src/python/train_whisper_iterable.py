@@ -10,7 +10,7 @@ Rettet oktober 2026 etter gjennomgang av kjøringene ALT2 og «True»:
    med tekst, usikre segmenter og uttalt tegnsetting (``\\Komma``).
 4. Start-tokenet fjernes fra etikettene (Whisper legger det til selv).
 5. Validering på et fast antall setninger med norsk normalisering, og beste
-   modell lagres i ``best/`` etter WER. Bare de siste ``--keep_last``
+   modell lagres i ``best-step-<steg>/`` etter WER (``best_metrics.json`` peker dit). Bare de siste ``--keep_last``
    stegmappene beholdes.
 6. Ugyldig ``--out_dir`` («True») stoppes.
 """
@@ -283,8 +283,7 @@ def save_ckpt(out_dir: str, step: int, model, processor, optim, sched, scaler, d
     os.makedirs(ckpt_dir, exist_ok=True)
 
     # Save HF artifacts (i biter på 1 GB: mindre minne under lagring)
-    model.save_pretrained(ckpt_dir, max_shard_size=SHARD)
-    processor.save_pretrained(ckpt_dir)
+    save_model_dir(ckpt_dir, model, processor)
 
     # Save training state
     state = {
@@ -304,28 +303,49 @@ def save_ckpt(out_dir: str, step: int, model, processor, optim, sched, scaler, d
 SHARD = "1GB"
 
 
-def save_best(out_dir: str, model, processor) -> bool:
-    """Lagrer beste modell i ``best/`` uten å skrive over den gamle før den nye er ferdig.
+def save_model_dir(d: str, model, processor) -> None:
+    """Modell, tokenizer og ``preprocessor_config.json`` (som CTranslate2 og
+    faster-whisper trenger; transformers 5 skriver den ikke lenger selv)."""
+    model.save_pretrained(d, max_shard_size=SHARD)
+    processor.save_pretrained(d)
+    fe = getattr(processor, "feature_extractor", None)
+    if fe is not None and hasattr(fe, "save_pretrained"):
+        fe.save_pretrained(d)
 
-    Den nye modellen skrives til ``best.tmp`` og byttes inn med navnebytter.
-    Feiler lagringen, beholdes forrige ``best/`` og treningen fortsetter.
+
+def save_best(out_dir: str, step: int, model, processor) -> str | None:
+    """Lagrer beste modell i en ny mappe ``best-step-<steg>`` og gir navnet.
+
+    Ingen mapper skrives over eller får nytt navn: på Windows nekter
+    antivirus, indeksering og synkronisering ofte å la en mappe med åpne filer
+    bytte navn («[WinError 5]»). ``best_metrics.json`` peker på mappen. Eldre
+    beste-mapper slettes etterpå hvis det går. Feiler lagringen, gjelder den
+    forrige og treningen fortsetter.
     """
-    best, tmp, old = (os.path.join(out_dir, n) for n in ("best", "best.tmp", "best.old"))
+    name = f"best-step-{step}"
+    d = os.path.join(out_dir, name)
     try:
-        shutil.rmtree(tmp, ignore_errors=True)
-        model.save_pretrained(tmp, max_shard_size=SHARD)
-        processor.save_pretrained(tmp)
-        shutil.rmtree(old, ignore_errors=True)
-        if os.path.isdir(best):
-            replace_with_retry(best, old)
-        replace_with_retry(tmp, best)
-        shutil.rmtree(old, ignore_errors=True)
-        return True
+        shutil.rmtree(d, ignore_errors=True)
+        save_model_dir(d, model, processor)
     except Exception as e:  # noqa: BLE001 - en mislykket lagring skal ikke stoppe treningen
         print(f"[advarsel] kunne ikke lagre beste modell: {type(e).__name__}: {e}", flush=True)
-        if not os.path.isdir(best) and os.path.isdir(old):
-            os.replace(old, best)
-        return False
+        shutil.rmtree(d, ignore_errors=True)
+        return None
+    for other in os.listdir(out_dir):
+        if other != name and (other.startswith("best-step-") or other in ("best", "best.tmp", "best.old")):
+            shutil.rmtree(os.path.join(out_dir, other), ignore_errors=True)
+    return name
+
+
+def best_dir(out_dir: str) -> str:
+    """Mappen med beste modell, fra ``best_metrics.json`` (eldre kjøringer: ``best/``)."""
+    p = os.path.join(out_dir, "best_metrics.json")
+    try:
+        with open(p, encoding="utf-8") as f:
+            name = json.load(f).get("dir")
+    except (OSError, ValueError):
+        name = None
+    return os.path.join(out_dir, name or "best")
 
 
 def load_ckpt(ckpt_dir: str, model, processor, optim, sched, scaler) -> tuple:
@@ -607,9 +627,10 @@ def main():
             processor.tokenizer.set_prefix_tokens(language=args.language, task="transcribe")
             append_jsonl(metrics_path, {"ts_utc": utc_ts(), "step": step, **ev, "data": dict(data_stats)})
             if ev["wer"] is not None and (best_wer is None or ev["wer"] < best_wer):
-                if save_best(args.out_dir, model, processor):
+                name = save_best(args.out_dir, step, model, processor)
+                if name:
                     best_wer = ev["wer"]
-                    atomic_write(best_path, json.dumps({"step": step, **ev}, ensure_ascii=False, indent=2))
+                    atomic_write(best_path, json.dumps({"step": step, "dir": name, **ev}, ensure_ascii=False, indent=2))
             log_state(args.out_dir, phase="TRAIN", max_steps=args.max_steps, best_wer=best_wer)
 
         # Periodic checkpoint (power-loss safe)

@@ -112,7 +112,9 @@ def test_training_runs_saves_best_and_rotates(tiny_model, tiny_data, tmp_path):
     assert len(evals) == 3 and all(m["items"] == 2 for m in evals)
     data = evals[-1]["data"]
     assert data.get("skip_silence_prompt", 0) >= 1 and data.get("skip_bad_audio", 0) >= 1
-    assert (out / "best" / "config.json").exists() and (out / "best_metrics.json").exists()
+    best = json.loads((out / "best_metrics.json").read_text(encoding="utf-8"))["dir"]
+    assert (out / best / "config.json").exists() and (out / best / "preprocessor_config.json").exists()
+    assert [p.name for p in out.iterdir() if p.name.startswith("best-step-")] == [best]  # eldre beste er slettet
     steps = sorted(p.name for p in (out / "checkpoints").iterdir())
     assert steps == ["step-12", "step-8"]
     state = json.loads((out / "state.json").read_text(encoding="utf-8"))
@@ -193,7 +195,8 @@ def test_mixed_language_training_validates_per_language(tiny_model, tmp_path):
     assert res.returncode == 0, res.stderr[-3000:]
     evals = [json.loads(line) for line in (out / "metrics.jsonl").read_text(encoding="utf-8").splitlines() if '"wer"' in line]
     assert evals and evals[-1]["items_no"] == 2 and evals[-1]["items_nn"] == 2
-    assert "wer_nn" in evals[-1] and (out / "best").is_dir()
+    best = json.loads((out / "best_metrics.json").read_text(encoding="utf-8"))["dir"]
+    assert "wer_nn" in evals[-1] and (out / best).is_dir()
     assert evals[0]["step"] == 0 and evals[0]["baseline"] is True and (out / "baseline_metrics.json").exists()
     state = json.loads((out / "state.json").read_text(encoding="utf-8"))
     assert state["trainable_parameters"] < state["total_parameters"]
