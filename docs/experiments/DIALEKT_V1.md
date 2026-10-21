@@ -81,3 +81,30 @@ Utgangsmodellen med målform fra manifestet var dårligere enn med `no` (35,3 %,
 - Tall forklarer ikke forskjellen: målestokkens normalisering behandler tall med sifre og ord likt (samme WER når sifre gjøres om til ord).
 - **Ny svakhet:** flere gjentakelsesløkker og innsettinger. Setninger flagget med løkke økte fra 4 til 27 av 1 068 (14 av dem uten tilsvarende gjentakelse i fasiten), og flagget for hallusinasjon fra 4 til 28. Ingen på NPSC. Innsettingsandelen økte fra 1,6 % til 4,9 %. Dette er ikke med i kriteriene, men må følges i den låste testen og i juridisk diktat.
 - Modellen skriver nærmere dialekten (for eksempel «me skal sjå» i stedet for «vi skal se» når fasiten er nynorsk). Det er riktig for NB Samtale, men om det er ønsket i EVIDA og Verity, er et produktvalg.
+
+### Låst test (kjørt én gang, 2026-10-21)
+
+| Testsett | Utgangsmodell | dialekt_v1 | Forskjell (95 % KI) |
+| --- | ---: | ---: | --- |
+| `nb_samtale_spk_test` (2 390 setninger, 18 talere) | 28,7 % | 15,6 % | −13,1 pp [−13,9, −12,2], signifikant |
+| – bokmål (2 142) | 26,8 % | 14,6 % | |
+| – nynorsk (248) | 45,0 % | 24,5 % | |
+| – vest (144) / sørvest (104) | 45,5 % / 44,2 % | 25,1 % / 23,7 % | |
+| – trøndelag (414) / øst (1 728) | 21,5 % / 28,1 % | 10,9 % / 15,5 % | |
+| `npsc_test_20170207` (501) | 12,5 % | 8,4 % | −4,1 pp [−4,9, −3,3], signifikant |
+| Stillhet med VAD (12 opptak) | | 0 av 12 | |
+
+**Kriteriene:** 4 (signifikant bedre på spk_test) oppfylt. 5 (ikke signifikant dårligere på NPSC test) oppfylt, med forbedring. 6 (0 av 12 i stillhet) oppfylt. dialekt_v1 er dermed ny kandidat for diktering, men må måles på juridisk diktat mot godkjenningskravene før den tas i bruk.
+
+**Svakheter som følger med** (ikke en del av kriteriene):
+
+| | Utgangsmodell | dialekt_v1 |
+| --- | ---: | ---: |
+| Utelatte ord, spk_test | 18,2 % | 3,1 % |
+| Innsatte ord, spk_test | 1,6 % | 4,3 % |
+| Setninger med gjentakelsesløkke, spk_test | 2 | 44 (1,8 %) |
+| Setninger flagget for hallusinasjon, spk_test | 4 | 56 (2,3 %) |
+| Gjentakelsesløkker, NPSC test | 0 | 4 |
+| Nektelser utelatt / lagt til, spk_test (786 i fasit) | 178 / 54 | 52 / 84 |
+
+Modellen mister langt færre nektelser, men legger til flere: 84 «ikke» som ikke ble sagt, mot 54. For juridisk tekst er en innsatt nektelse like alvorlig som en utelatt. Gjentakelsesløkkene forekommer nå også på formell tale. Begge deler må måles på juridisk diktat, og tiltak mot løkker (for eksempel grense for gjentatte ordsekvenser i dekodingen eller en vakt i motoren) prøves på validering, aldri på den låste testen.

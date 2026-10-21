@@ -17,7 +17,7 @@ Statusverdier som i [fase 1](PHASE1_STATUS.md): **verifisert**, **venter på kj�
 | Stemmestyring med bekreftelse | Ikke startet | |
 | Mål mot juridisk testsett for hver ny versjon | Blokkert | Venter på opptak fra fase 1 |
 | Sikkerhet før første ekte opptak: tilgangsstyring, kryptert lagring, sletting, innsynslogg, lyd forlater ikke maskinen | Verifisert (lokal motor) | Tilgangsnøkkel, Host/Origin-kontroll, AES-256-GCM per økt med DPAPI-beskyttet hovednøkkel, fast sletting (30 dager), HMAC-kjedet innsynslogg, bare 127.0.0.1. 21 sikkerhetstester; DPAPI testet på Windows i CI. Se [ENGINE.md](ENGINE.md#personvern). Gjelder motoren; EVIDA må ha tilsvarende for det EVIDA lagrer |
-| Videre trening for dialekt og nynorsk | Klar til kjøring | [Forsøk dialekt_v1](experiments/DIALEKT_V1.md): data bygget (17 542 segmenter), kriterier satt før kjøring. `scripts\RUN_FINETUNE_DIALECT.cmd` |
+| Videre trening for dialekt og nynorsk | Ferdig: dialekt_v1 besto validering og låst test (samtale 28,7 % → 15,6 %, NPSC test 12,5 % → 8,4 %, stillhet 0/12). Flere gjentakelsesløkker og innsatte nektelser. Ny kandidat; må måles på juridisk diktat. Se docs/experiments/DIALEKT_V1.md | [Forsøk dialekt_v1](experiments/DIALEKT_V1.md): data bygget (17 542 segmenter), kriterier satt før kjøring. `scripts\RUN_FINETUNE_DIALECT.cmd` |
 | EVIDA med diktering hos 3–5 advokater | Bygget, ikke prøvd av advokater | «Diktér» i Saksrommet i EvidaNy2.0 (bare frontend, ukommittert i EVIDA-repoet; se `docs/DICTATION.md` der). Paring med engangskode, lyd bare til 127.0.0.1. Testet i Chromium med falsk mikrofon mot motoren; ekte mikrofon og modell inne i EVIDA gjenstår |
 
 ## Neste steg
