@@ -282,8 +282,8 @@ def save_ckpt(out_dir: str, step: int, model, processor, optim, sched, scaler, d
     shutil.rmtree(ckpt_dir, ignore_errors=True)
     os.makedirs(ckpt_dir, exist_ok=True)
 
-    # Save HF artifacts
-    model.save_pretrained(ckpt_dir)
+    # Save HF artifacts (i biter på 1 GB: mindre minne under lagring)
+    model.save_pretrained(ckpt_dir, max_shard_size=SHARD)
     processor.save_pretrained(ckpt_dir)
 
     # Save training state
@@ -300,6 +300,33 @@ def save_ckpt(out_dir: str, step: int, model, processor, optim, sched, scaler, d
     torch.save(state, os.path.join(ckpt_dir, "train_state.pt"))
     shutil.rmtree(final_dir, ignore_errors=True)
     replace_with_retry(ckpt_dir, final_dir)
+
+SHARD = "1GB"
+
+
+def save_best(out_dir: str, model, processor) -> bool:
+    """Lagrer beste modell i ``best/`` uten å skrive over den gamle før den nye er ferdig.
+
+    Den nye modellen skrives til ``best.tmp`` og byttes inn med navnebytter.
+    Feiler lagringen, beholdes forrige ``best/`` og treningen fortsetter.
+    """
+    best, tmp, old = (os.path.join(out_dir, n) for n in ("best", "best.tmp", "best.old"))
+    try:
+        shutil.rmtree(tmp, ignore_errors=True)
+        model.save_pretrained(tmp, max_shard_size=SHARD)
+        processor.save_pretrained(tmp)
+        shutil.rmtree(old, ignore_errors=True)
+        if os.path.isdir(best):
+            replace_with_retry(best, old)
+        replace_with_retry(tmp, best)
+        shutil.rmtree(old, ignore_errors=True)
+        return True
+    except Exception as e:  # noqa: BLE001 - en mislykket lagring skal ikke stoppe treningen
+        print(f"[advarsel] kunne ikke lagre beste modell: {type(e).__name__}: {e}", flush=True)
+        if not os.path.isdir(best) and os.path.isdir(old):
+            os.replace(old, best)
+        return False
+
 
 def load_ckpt(ckpt_dir: str, model, processor, optim, sched, scaler) -> tuple:
     # Load model/processor from same ckpt dir
@@ -580,11 +607,9 @@ def main():
             processor.tokenizer.set_prefix_tokens(language=args.language, task="transcribe")
             append_jsonl(metrics_path, {"ts_utc": utc_ts(), "step": step, **ev, "data": dict(data_stats)})
             if ev["wer"] is not None and (best_wer is None or ev["wer"] < best_wer):
-                best_wer = ev["wer"]
-                best_dir = os.path.join(args.out_dir, "best")
-                model.save_pretrained(best_dir)
-                processor.save_pretrained(best_dir)
-                atomic_write(best_path, json.dumps({"step": step, **ev}, ensure_ascii=False, indent=2))
+                if save_best(args.out_dir, model, processor):
+                    best_wer = ev["wer"]
+                    atomic_write(best_path, json.dumps({"step": step, **ev}, ensure_ascii=False, indent=2))
             log_state(args.out_dir, phase="TRAIN", max_steps=args.max_steps, best_wer=best_wer)
 
         # Periodic checkpoint (power-loss safe)

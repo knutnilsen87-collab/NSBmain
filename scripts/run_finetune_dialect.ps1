@@ -87,13 +87,23 @@ Write-Log $summary
 # ---------- 2. Trening
 if (-not $SkipTrain) {
     Write-Log "Trener: $MaxSteps steg, batch $BatchSize x $GradAccum, $FreezeLayers frosne koderlag (kan ta flere timer)"
-    & $Train src/python/train_whisper_iterable.py --train_jsonl (Join-Path $Data 'train.jsonl') `
-        --val_jsonl (Join-Path $Data 'val.jsonl') --out_dir $Run --model_name $Base --language no `
-        --val_languages no,nn --bf16 --batch_size $BatchSize --grad_accum $GradAccum `
-        --freeze_encoder_layers $FreezeLayers --gradient_checkpointing --spec_augment --lr $LearningRate `
-        --warmup_steps 150 --max_steps $MaxSteps --eval_steps $EvalSteps --save_steps $EvalSteps --keep_last 2 `
-        --limit_val 500 --eval_at_start --resume *>> $Detail
-    if ($LASTEXITCODE -ne 0) { Stop-WithError 'Treningen stoppet (se RUN.detail.log). Kjør skriptet igjen for å fortsette fra siste checkpoint.' }
+    # Stopper treningen uten feilmelding fra Python (Windows avslutter prosessen,
+    # for eksempel ved lite minne under lagring), startes den igjen fra siste
+    # checkpoint, opptil fem ganger.
+    for ($try = 1; $try -le 6; $try++) {
+        & $Train src/python/train_whisper_iterable.py --train_jsonl (Join-Path $Data 'train.jsonl') `
+            --val_jsonl (Join-Path $Data 'val.jsonl') --out_dir $Run --model_name $Base --language no `
+            --val_languages no,nn --bf16 --batch_size $BatchSize --grad_accum $GradAccum `
+            --freeze_encoder_layers $FreezeLayers --gradient_checkpointing --spec_augment --lr $LearningRate `
+            --warmup_steps 150 --max_steps $MaxSteps --eval_steps $EvalSteps --save_steps $EvalSteps --keep_last 2 `
+            --limit_val 500 --eval_at_start --resume *>> $Detail
+        $code = $LASTEXITCODE
+        if ($code -eq 0) { break }
+        $hex = '0x{0:X8}' -f ([int64]$code -band 0xFFFFFFFF)
+        if ($try -eq 6) { Stop-WithError "Treningen stoppet seks ganger (siste avslutningskode $code / $hex). Se RUN.detail.log." }
+        Write-Log "Treningen stoppet (avslutningskode $code / $hex). Starter igjen fra siste checkpoint om 30 sekunder ($try av 5)."
+        Start-Sleep -Seconds 30
+    }
 }
 $best = Join-Path $Run 'best'
 if (-not (Test-Path (Join-Path $best 'config.json'))) { Stop-WithError 'Fant ikke beste checkpoint' }

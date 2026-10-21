@@ -150,3 +150,31 @@ def test_replace_with_retry_survives_short_windows_lock(tmp_path, monkeypatch):
     monkeypatch.setattr(t.os, "replace", flaky)
     t.replace_with_retry(str(src), str(dst), wait=0)
     assert dst.read_text() == "ny" and calls["n"] == 3
+
+
+def test_save_best_keeps_previous_model_when_saving_fails(tmp_path):
+    import sys
+
+    sys.path.insert(0, "src/python")
+    import train_whisper_iterable as t
+
+    class Ok:
+        def save_pretrained(self, d, **kw):
+            import os
+
+            os.makedirs(d, exist_ok=True)
+            open(os.path.join(d, "model.safetensors"), "w").write("ny")
+
+    class Fails:
+        def save_pretrained(self, d, **kw):
+            raise OSError("disk")
+
+    proc = Ok()
+    assert t.save_best(str(tmp_path), Ok(), proc)
+    assert (tmp_path / "best" / "model.safetensors").read_text() == "ny"
+    (tmp_path / "best" / "model.safetensors").write_text("gammel")
+    assert not t.save_best(str(tmp_path), Fails(), proc)
+    assert (tmp_path / "best" / "model.safetensors").read_text() == "gammel"
+    assert t.save_best(str(tmp_path), Ok(), proc)
+    assert (tmp_path / "best" / "model.safetensors").read_text() == "ny"
+    assert not (tmp_path / "best.old").exists() and not (tmp_path / "best.tmp").exists()
