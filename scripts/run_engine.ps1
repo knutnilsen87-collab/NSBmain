@@ -31,4 +31,5 @@ $path = $registry.$Model.path
 if (-not $path -or -not (Test-Path (Join-Path $Root $path))) { Write-Host "Fant ikke modellen $Model. Kjør scripts\RUN_BENCHMARK.cmd først."; exit 1 }
 $ct = if ($Device -eq 'cpu') { 'int8' } else { 'float16' }
 $originArgs = @(); foreach ($o in ($AllowOrigin | ForEach-Object { $_ -split ',' })) { if ($o.Trim()) { $originArgs += @('--allow-origin', $o.Trim()) } }
-& $Py -m nsb_engine.server --model $path --label $Model --device $Device --compute-type $ct --port $Port @(if ($NoBrowser) { @() } else { @('--open') }) @originArgs @args
+$openArgs = @(); if (-not $NoBrowser) { $openArgs = @('--open') }
+& $Py -m nsb_engine.server --model $path --label $Model --device $Device --compute-type $ct --port $Port @openArgs @originArgs @args
