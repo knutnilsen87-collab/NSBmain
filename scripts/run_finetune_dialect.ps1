@@ -18,7 +18,9 @@ param(
     [int]$EvalSteps = 250,
     [int]$FreezeLayers = 24,
     [double]$LearningRate = 1e-5,
-    [switch]$SkipTrain
+    [switch]$SkipTrain,
+    # Låst test: kjøres én gang, og bare etter at valideringskriteriene i docs/experiments/DIALEKT_V1.md er oppfylt.
+    [switch]$LockedTest
 )
 $ErrorActionPreference = 'Continue'
 $PSDefaultParameterValues['Out-File:Encoding'] = 'utf8'
@@ -85,7 +87,7 @@ $summary = "$(& $Train -c "import json,sys; s=json.load(open(sys.argv[1], encodi
 Write-Log $summary
 
 # ---------- 2. Trening
-if (-not $SkipTrain) {
+if (-not $SkipTrain -and -not $LockedTest) {
     Write-Log "Trener: $MaxSteps steg, batch $BatchSize x $GradAccum, $FreezeLayers frosne koderlag (kan ta flere timer)"
     # Stopper treningen uten feilmelding fra Python (Windows avslutter prosessen,
     # for eksempel ved lite minne under lagring), startes den igjen fra siste
@@ -122,6 +124,41 @@ if (-not (Test-Path (Join-Path $Ct2 'model.bin'))) {
     & $Train -m ctranslate2.converters.transformers --model $best --output_dir $Ct2 --copy_files tokenizer.json preprocessor_config.json --quantization float16 --force *>> $Detail
     if ($LASTEXITCODE -ne 0) { Stop-WithError 'Konverteringen feilet' }
     & $Train -c "import sys; sys.path.insert(0, 'scripts'); from pathlib import Path; from download_models import fix_alignment_heads; print(fix_alignment_heads(Path(r'$Ct2'), Path(r'$best')))" *>> $Detail
+}
+
+# ---------- 4b. Låst test (én gang)
+if ($LockedTest) {
+    $Locked = Join-Path $Root "eval/results/finetune_${Name}_locked"
+    $Marker = Join-Path $Locked 'DONE'
+    if (Test-Path $Marker) { Stop-WithError "Den låste testen er allerede kjørt ($Marker). Den kjøres bare én gang per kandidat." }
+    $site = (& $Bench -c "import sysconfig; print(sysconfig.get_paths()['purelib'])").Trim()
+    foreach ($sub in @('nvidia/cublas/bin', 'nvidia/cudnn/bin', 'nvidia/cuda_nvrtc/bin', 'nvidia/cuda_runtime/bin')) {
+        $p = Join-Path $site $sub
+        if (Test-Path $p) { $env:PATH = "$p;$env:PATH" }
+    }
+    if (-not (Test-Path 'eval/testsets/silence_v1/manifest.jsonl')) { & $Bench -m nsb_eval.silence --out-dir eval/testsets/silence_v1 *>> $Detail }
+    $ljobs = @(
+        @('nb_samtale_spk_test', 'distil-turbo-utgangspunkt', $BaseCt2, @(), @('--manifest', 'eval/testsets/nb_samtale_spk_test.jsonl', '--audio-root', $Root, '--group-by', 'dialect', '--group-by', 'standard')),
+        @('nb_samtale_spk_test', "distil-turbo-$Name", $Ct2, @('--language-from-meta', 'standard'), @('--manifest', 'eval/testsets/nb_samtale_spk_test.jsonl', '--audio-root', $Root, '--group-by', 'dialect', '--group-by', 'standard')),
+        @('npsc_test_20170207', 'distil-turbo-utgangspunkt', $BaseCt2, @(), @('--manifest', 'eval/testsets/npsc_test_20170207.jsonl', '--audio-root', $Root)),
+        @('npsc_test_20170207', "distil-turbo-$Name", $Ct2, @(), @('--manifest', 'eval/testsets/npsc_test_20170207.jsonl', '--audio-root', $Root)),
+        @('silence_v1', "distil-turbo-$Name-vad", $Ct2, @('--vad'), @('--manifest', 'eval/testsets/silence_v1/manifest.jsonl', '--audio-root', 'eval/testsets/silence_v1'))
+    )
+    $failed = $false
+    foreach ($j in $ljobs) {
+        $ts, $label, $model, $extra, $tsArgs = $j
+        Write-Log "Låst test: $label på $ts"
+        & $Bench -m nsb_eval.runner @tsArgs --testset $ts --backend faster-whisper --model $model --label $label `
+            --device cuda --compute-type float16 --out-dir (Join-Path $Locked "$ts/$label") @extra *>> $Detail
+        if ($LASTEXITCODE -ne 0) { Write-Log "FEIL i $label på $ts (se RUN.detail.log)"; $failed = $true }
+    }
+    if ($failed) { Stop-WithError 'Den låste testen ble ikke fullført. Kjør igjen; ferdige setninger hoppes over.' }
+    foreach ($ts in @('nb_samtale_spk_test', 'npsc_test_20170207')) {
+        & $Bench -m nsb_eval.compare --results $Locked --testset $ts --baseline distil-turbo-utgangspunkt *>> (Join-Path $Locked "compare_$ts.txt")
+    }
+    Set-Content -Path $Marker -Value (Get-Date -Format o) -Encoding utf8
+    Write-Log "Låst test ferdig. Se $Locked (compare_*.txt)"
+    exit 0
 }
 
 # ---------- 4. Måling på validering

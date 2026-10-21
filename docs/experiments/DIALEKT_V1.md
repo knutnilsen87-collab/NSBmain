@@ -47,4 +47,37 @@ Oppfylles også disse, blir modellen ny kandidat for diktering. Den må likevel 
 
 ## Resultat
 
-Ikke kjørt.
+### Trening (2026-10-20 og 21)
+
+1 500 steg på RTX 4080. Kjøringen stoppet tre ganger på grunn av Windows (låst statusfil, prosess avsluttet under lagring, nektet navnebytte); den fortsatte hver gang fra siste checkpoint, og lagringen er gjort robust. Validering under trening (500 segmenter, grådig dekoding):
+
+| Steg | Samlet | Bokmål | Nynorsk |
+| ---: | ---: | ---: | ---: |
+| 0 (utgangsmodell) | 29,8 % | 25,4 % | 49,7 % |
+| 500 | 18,5 % | 15,5 % | 32,0 % |
+| 1 000 | 17,2 % | 14,6 % | 29,2 % |
+| 1 250 | 16,9 % | 14,5 % | 28,0 % |
+| 1 500 (valgt) | 16,9 % | 14,4 % | 28,3 % |
+
+Steg 1 500 er valgt etter regelen (lavest samlet WER). Forbedringen flater ut etter steg 1 000.
+
+### Validering etter trening (målestokken, 2026-10-21)
+
+| Testsett | Utgangsmodell | dialekt_v1 | Forskjell (95 % KI) |
+| --- | ---: | ---: | --- |
+| `nb_samtale_spk_dev` (1 068 setninger) | 34,3 % | 19,6 % | −14,8 pp [−15,9, −13,5], signifikant |
+| – bokmål (743) | 31,2 % | 18,0 % | |
+| – nynorsk (325) | 46,2 % | 25,4 % | |
+| – vest (236) | 51,3 % | 30,5 % | |
+| `npsc_eval_20170209` (582) | 15,3 % | 10,9 % | −4,5 pp [−5,2, −3,7], signifikant |
+
+Utgangsmodellen med målform fra manifestet var dårligere enn med `no` (35,3 %, +1,0 pp), så `no` er sammenligningsgrunnlaget.
+
+**Kriteriene:** 1 (lavere og signifikant på spk_dev) oppfylt. 2 (lavere på nynorsk) oppfylt. 3 (NPSC eval høyst 0,5 pp dårligere) oppfylt, med forbedring. Den låste testen kjøres derfor én gang (`RUN_FINETUNE_DIALECT.cmd -LockedTest`).
+
+**Hva forbedringen består av** (analyse av setningene, ikke en del av kriteriene):
+- Mest færre utelatte ord: andelen slettede ord i samtale falt fra 20,8 % til 3,5 %. Utgangsmodellen er laget for lesbar tekst og hopper over småord, men også innhold: «ikke» ble utelatt 100 ganger, og andelen bortfalte nektelser falt fra 31 % til 10 %.
+- En del er stil: NB Samtale skriver småord som «så», «da», «liksom» og «ja», som utgangsmodellen utelater med vilje. Uten slike småord på begge sider er forskjellen 31,9 % mot 19,7 %, altså fortsatt 12 pp.
+- Tall forklarer ikke forskjellen: målestokkens normalisering behandler tall med sifre og ord likt (samme WER når sifre gjøres om til ord).
+- **Ny svakhet:** flere gjentakelsesløkker og innsettinger. Setninger flagget med løkke økte fra 4 til 27 av 1 068 (14 av dem uten tilsvarende gjentakelse i fasiten), og flagget for hallusinasjon fra 4 til 28. Ingen på NPSC. Innsettingsandelen økte fra 1,6 % til 4,9 %. Dette er ikke med i kriteriene, men må følges i den låste testen og i juridisk diktat.
+- Modellen skriver nærmere dialekten (for eksempel «me skal sjå» i stedet for «vi skal se» når fasiten er nynorsk). Det er riktig for NB Samtale, men om det er ønsket i EVIDA og Verity, er et produktvalg.
