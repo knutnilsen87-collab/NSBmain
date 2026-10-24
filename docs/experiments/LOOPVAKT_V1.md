@@ -36,6 +36,20 @@ Kandidater: `standard`, `loopvakt` og `loopvakt_ngram`, alle med forkorting. Må
 
 Den valgte profilen brukes for dialekt_v1 i Verity. EVIDA er ikke berørt før juridisk diktat er målt.
 
-## Resultat
+## Resultat (2026-10-24)
 
-Ikke kjørt.
+Alle med forkorting av løkker. dialekt_v1, strålesøk 5.
+
+| Profil | spk_dev WER | spk_dev innsatte ord | NPSC eval WER | NPSC innsatte ord | Løkker før forkorting (spk_dev) | Stillhet med VAD |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| `standard` | 19,06 % | 4,26 % | 10,89 % | 1,15 % | 27 | 0 av 12 (låst test) |
+| `loopvakt` | 19,06 % | 4,26 % | 10,89 % | 1,15 % | 27 | 0 av 12 |
+| `loopvakt_ngram` | 19,66 % | 4,39 % | **13,89 %** | 3,80 % | 23 | 0 av 12 |
+
+**Valg etter kriteriene: `standard` med forkorting.**
+
+- `loopvakt` ga nøyaktig samme tekst som `standard` i alle 1 091 + 582 setninger. Ny dekoding slår til når kompresjonsforholdet er over 2,4, men løkkene i disse korte segmentene er korte nok til at forholdet holder seg under (1,0–1,7 for alle unntatt én). Profilen gjør altså ingenting her; den kan ha effekt i lange segmenter, men det er ikke målt.
+- `loopvakt_ngram` bryter kriterium 1: NPSC eval blir 3,0 prosentpoeng dårligere. Formell tale gjentar faste uttrykk («representanten …», «i henhold til …») innenfor samme segment, og sperren tvinger modellen til å skrive noe annet. Den er derfor uegnet, særlig for juridisk tekst.
+- Forkortingen alene fjerner løkkene uten å skade noe målt, og er allerede standard i talemotoren og i Verity.
+
+Innsatte ord ligger fortsatt på 4,3 % i samtale (1,6 % for utgangsmodellen). Det løses ikke med dekoding; en del er ord fra andre som snakker samtidig, resten bør angripes med trening eller et sterkere usikkerhetssignal.
