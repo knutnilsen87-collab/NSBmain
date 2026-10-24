@@ -42,7 +42,7 @@ NORMALIZER = "nsb_eval.normalize v4 (lesbar + ordrett profil, meningsbærende fe
 # Felt som må være like for å kunne fortsette en kjøring i samme mappe.
 IDENTITY_KEYS = (
     "backend", "model", "label", "model_revision", "device", "compute_type", "language",
-    "language_from_meta", "beam_size", "vad_filter", "manifest_sha256",
+    "language_from_meta", "beam_size", "vad_filter", "manifest_sha256", "decoding",
 )
 # Rettskrivning i manifestet -> Whisper-språkkode.
 STANDARD_TO_LANGUAGE = {"bm": "no", "nb": "no", "nn": "nn"}
@@ -121,6 +121,8 @@ def _check_identity(out: Path, identity: dict, resume: bool) -> None:
     meta_path = out / "run_meta.json"
     if resume and meta_path.exists():
         old = json.loads(meta_path.read_text(encoding="utf-8"))
+        # Kjøringer fra før dekodingsprofiler fantes, brukte «standard».
+        old = {"decoding": "standard", **old}
         diff = {k: (old.get(k), identity.get(k)) for k in IDENTITY_KEYS if old.get(k) != identity.get(k)}
         if diff:
             raise SystemExit(
@@ -242,6 +244,7 @@ def evaluate(
         "language": backend_kwargs.get("language"),
         "beam_size": backend_kwargs.get("beam_size"),
         "vad_filter": backend_kwargs.get("vad_filter"),
+        "decoding": backend_kwargs.get("decoding", "standard"),
         "language_from_meta": language_from_meta,
         "manifest_sha256": file_sha256(manifest),
     }
@@ -345,6 +348,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--limit", type=int, default=None)
     ap.add_argument("--group-by", action="append", default=None, help="Metadatafelt å bryte ned på")
     ap.add_argument("--no-resume", action="store_true")
+    ap.add_argument("--decoding", default="standard", help="Dekodingsprofil (nsb_eval.decoding): standard, loopvakt, loopvakt_ngram")
     args = ap.parse_args(argv)
 
     if args.backend == "faster-whisper":
@@ -360,6 +364,7 @@ def main(argv: list[str] | None = None) -> int:
             "label": args.label,
             "model_revision": args.model_revision,
             "model_sha256": args.model_sha256,
+            "decoding": args.decoding,
         }
     else:
         kwargs = {"answers_file": args.answers_file, "label": args.label}

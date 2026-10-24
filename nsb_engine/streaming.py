@@ -448,8 +448,16 @@ class FasterWhisperBackend:
         compute_type: str = "float16",
         language: str = "no",
         beam_size: int = 5,
+        decoding: str = "standard",
+        collapse_loops: bool = True,
     ) -> None:
         from faster_whisper import WhisperModel
+
+        from nsb_eval.decoding import profile
+
+        self.decoding = decoding
+        self._decode = profile(decoding)
+        self.collapse = collapse_loops
 
         _check_alignment_heads(model_path)
         if device == "cpu" and compute_type == "float16":
@@ -462,6 +470,15 @@ class FasterWhisperBackend:
     def transcribe(self, audio: np.ndarray, prompt: str | None = None, hotwords: str | None = None) -> list[Word]:
         if len(audio) < SAMPLE_RATE // 10:
             return []
+        words = self._decode_words(audio, prompt, hotwords)
+        if self.collapse:
+            # Vakt mot gjentakelsesløkker: en frase gjentatt fire ganger eller mer kortes til to.
+            from nsb_eval.decoding import collapse_loops
+
+            words = collapse_loops(words, key=lambda w: w.text)
+        return words
+
+    def _decode_words(self, audio, prompt, hotwords) -> list[Word]:
         try:
             return self._words(self._segments(audio, prompt, hotwords, word_timestamps=True))
         except (IndexError, ValueError):
@@ -478,12 +495,12 @@ class FasterWhisperBackend:
             language=self.language,
             task="transcribe",
             beam_size=self.beam_size,
-            temperature=0.0,
             condition_on_previous_text=False,
             initial_prompt=prompt,
             hotwords=hotwords,
             word_timestamps=word_timestamps,
             vad_filter=False,
+            **self._decode,
         )
         return list(segments)
 

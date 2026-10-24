@@ -213,6 +213,7 @@ def test_backend_falls_back_when_word_alignment_fails():
 
     b = FasterWhisperBackend.__new__(FasterWhisperBackend)
     b.model, b.language, b.beam_size, b.alignment_fallbacks = Model(), "no", 1, 0
+    b._decode, b.collapse = {"temperature": 0.0}, True
     words = b.transcribe(np.zeros(SAMPLE_RATE, dtype=np.float32))
     assert [(w.text, w.start, w.end) for w in words] == [("Han", 1.0, 1.5), ("nektet", 1.5, 2.0)]
     assert b.alignment_fallbacks == 1 and words[0].probability == 0.0
@@ -244,3 +245,27 @@ def test_transcribe_long_decodes_only_speech_with_absolute_times():
     assert len(calls) == 2 and all(h == "Silje" for _, h in calls)
     assert calls[0][0] == pytest.approx(2.4)  # 0,2 s ekstra på hver side
     assert [round(w.start, 2) for w in words] == [10.1, 50.1]
+
+
+def test_backend_collapses_repetition_loops_and_passes_decoding_profile():
+    from types import SimpleNamespace
+
+    from nsb_engine.streaming import FasterWhisperBackend
+
+    seen = {}
+
+    class Model:
+        def transcribe(self, audio, **kw):
+            seen.update(kw)
+            ws = [SimpleNamespace(word=f" {t}", start=i * 0.2, end=i * 0.2 + 0.15, probability=0.9)
+                  for i, t in enumerate(["det", "det", "det", "det", "det", "handlar", "om."])]
+            return iter([SimpleNamespace(text="", start=0.0, end=2.0, words=ws)]), None
+
+    b = FasterWhisperBackend.__new__(FasterWhisperBackend)
+    b.model, b.language, b.beam_size, b.alignment_fallbacks = Model(), "no", 1, 0
+    from nsb_eval.decoding import profile
+
+    b._decode, b.collapse = profile("loopvakt"), True
+    words = b.transcribe(np.zeros(SAMPLE_RATE, dtype=np.float32))
+    assert [w.text for w in words] == ["det", "det", "handlar", "om."]
+    assert seen["temperature"] == (0.0, 0.2, 0.4) and seen["compression_ratio_threshold"] == 2.4

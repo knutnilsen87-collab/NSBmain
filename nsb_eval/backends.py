@@ -51,8 +51,14 @@ class FasterWhisperBackend(Backend):
         label: str | None = None,
         model_revision: str | None = None,
         model_sha256: str | None = None,
+        decoding: str = "standard",
     ):
         from faster_whisper import WhisperModel  # importeres først her
+
+        from nsb_eval.decoding import profile
+
+        self.decoding = decoding
+        self._decode = profile(decoding)
 
         self.model_ref = model
         self.label = label or model
@@ -80,7 +86,8 @@ class FasterWhisperBackend(Backend):
             "language": self.language,
             "task": "transcribe",
             "beam_size": self.beam_size,
-            "temperature": 0.0,
+            "temperature": self._decode["temperature"],
+            "decoding": self.decoding,
             "condition_on_previous_text": False,
             "vad_filter": self.vad_filter,
             "faster_whisper_version": faster_whisper.__version__,
@@ -94,9 +101,9 @@ class FasterWhisperBackend(Backend):
             language=language or self.language,
             task="transcribe",
             beam_size=self.beam_size,
-            temperature=0.0,
             condition_on_previous_text=False,
             vad_filter=self.vad_filter,
+            **self._decode,
         )
         parts = [s.text.strip() for s in segments]
         return {

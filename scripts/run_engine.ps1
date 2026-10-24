@@ -10,7 +10,9 @@ param(
     # Nettsider som får koble seg til (EVIDA lokalt). Paringskoden vises i vinduet.
     [string[]]$AllowOrigin = @('http://127.0.0.1:5173', 'http://localhost:5173'),
     # Ikke åpne testsiden (når motoren startes av Verity eller EVIDA).
-    [switch]$NoBrowser
+    [switch]$NoBrowser,
+    # Dekodingsprofil (nsb_eval.decoding): standard, loopvakt, loopvakt_ngram.
+    [string]$Decoding = 'standard'
 )
 $ErrorActionPreference = 'Stop'
 Set-Location $Root
@@ -28,8 +30,10 @@ $env:PYTHONIOENCODING = 'utf-8'
 $env:PYTHONUTF8 = '1'
 $registry = Get-Content (Join-Path $Root 'eval/results/models.json') -Raw | ConvertFrom-Json
 $path = $registry.$Model.path
+# Egne modeller (for eksempel dialekt_v1) ligger i models/finetuned/<navn>/ct2.
+if (-not $path -and (Test-Path (Join-Path $Root "models/finetuned/$Model/ct2/model.bin"))) { $path = "models/finetuned/$Model/ct2" }
 if (-not $path -or -not (Test-Path (Join-Path $Root $path))) { Write-Host "Fant ikke modellen $Model. Kjør scripts\RUN_BENCHMARK.cmd først."; exit 1 }
 $ct = if ($Device -eq 'cpu') { 'int8' } else { 'float16' }
 $originArgs = @(); foreach ($o in ($AllowOrigin | ForEach-Object { $_ -split ',' })) { if ($o.Trim()) { $originArgs += @('--allow-origin', $o.Trim()) } }
 $openArgs = @(); if (-not $NoBrowser) { $openArgs = @('--open') }
-& $Py -m nsb_engine.server --model $path --label $Model --device $Device --compute-type $ct --port $Port @openArgs @originArgs @args
+& $Py -m nsb_engine.server --model $path --label $Model --device $Device --compute-type $ct --port $Port --decoding $Decoding @openArgs @originArgs @args

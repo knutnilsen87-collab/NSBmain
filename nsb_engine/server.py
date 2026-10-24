@@ -410,6 +410,8 @@ def main(argv=None) -> int:
     ap.add_argument("--allow-remote", action="store_true", help="tillat å lytte på andre adresser enn 127.0.0.1 (frarådet)")
     ap.add_argument("--open", action="store_true", help="åpne testsiden i nettleseren")
     ap.add_argument("--no-vad", action="store_true", help="slå av stemmeaktivitetsdeteksjon (frarådet)")
+    ap.add_argument("--decoding", default="standard", help="dekodingsprofil (nsb_eval.decoding): standard, loopvakt, loopvakt_ngram")
+    ap.add_argument("--no-loop-collapse", action="store_true", help="ikke kort ned fraser som gjentas fire ganger eller mer")
     args = ap.parse_args(argv)
     if args.host not in LOOPBACK and not args.allow_remote:
         ap.error(f"--host {args.host}: tjenesten lytter bare på 127.0.0.1, så lyd ikke kan nås fra nettet. "
@@ -426,9 +428,11 @@ def main(argv=None) -> int:
     from nsb_engine.streaming import FasterWhisperBackend, silero_detector
 
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
-    backend = FasterWhisperBackend(args.model, device=args.device, compute_type=args.compute_type, language=args.language)
+    backend = FasterWhisperBackend(args.model, device=args.device, compute_type=args.compute_type, language=args.language,
+                                   decoding=args.decoding, collapse_loops=not args.no_loop_collapse)
     app = create_app(backend, detector_factory=None if args.no_vad else silero_detector,
-                     model_label=args.label or Path(args.model).parent.name, device=args.device,
+                     model_label=(args.label or Path(args.model).parent.name) + ("" if args.decoding == "standard" else f" ({args.decoding})"),
+                     device=args.device,
                      data_root=Path(args.data_dir) if args.data_dir else None, port=args.port,
                      allowed_origins=args.allow_origin, retention_days=args.retention_days)
     url = f"http://127.0.0.1:{args.port}/#token={app.state.token.value}"
